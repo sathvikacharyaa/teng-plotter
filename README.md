@@ -92,12 +92,6 @@ Typical force-response analysis includes:
 
 The website calculates the peak-to-peak voltage from the uploaded measurement data.
 
-The peak-to-peak voltage is calculated using:
-
-\[
-V_{\text{peak-to-peak}} = V_{\text{maximum}} - V_{\text{minimum}}
-\]
-
 This allows users to obtain the voltage response for each frequency or force condition without calculating it manually.
 
 ### 5. Peak-to-Peak Voltage Table
