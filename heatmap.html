@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark light">
+    <title>TENG Heatmap Plotter</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23111111'/%3E%3Crect x='4' y='4' width='6' height='6' fill='%23ff4444' opacity='0.9'/%3E%3Crect x='13' y='4' width='6' height='6' fill='%23ff8800' opacity='0.9'/%3E%3Crect x='22' y='4' width='6' height='6' fill='%23ffdd00' opacity='0.9'/%3E%3Crect x='4' y='13' width='6' height='6' fill='%23ff8800' opacity='0.9'/%3E%3Crect x='13' y='13' width='6' height='6' fill='%23ffdd00' opacity='0.9'/%3E%3Crect x='22' y='13' width='6' height='6' fill='%2300cc66' opacity='0.9'/%3E%3Crect x='4' y='22' width='6' height='6' fill='%23ffdd00' opacity='0.9'/%3E%3Crect x='13' y='22' width='6' height='6' fill='%2300cc66' opacity='0.9'/%3E%3Crect x='22' y='22' width='6' height='6' fill='%230088ff' opacity='0.9'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.26.0/plotly.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg:        #000000;
+            --surface:   #0d0d0d;
+            --surface2:  #141414;
+            --border:    #222222;
+            --border2:   #2a2a2a;
+            --text:      #e8e8e8;
+            --text-dim:  #888888;
+            --text-faint:#444444;
+            --accent:    #ffffff;
+            --accent-dim:#cccccc;
+            --success:   #2ecc71;
+            --error:     #e74c3c;
+            --radius:    8px;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            min-height: 100vh;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 1440px; margin: 0 auto; }
+
+        /* ── Header & Nav ─────────────────────────────────────── */
+        .header {
+            padding: 24px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .header h1 { font-size: 22px; font-weight: 600; color: var(--accent); letter-spacing: -0.3px; }
+        .header p  { font-size: 12px; color: var(--text-dim); font-weight: 400; }
+
+        .site-nav { display: flex; gap: 4px; margin-left: auto; align-items: center; }
+        .nav-link {
+            font-size: 12px; font-weight: 500; font-family: 'Inter', sans-serif;
+            padding: 6px 14px; border-radius: 5px; border: 1px solid var(--border2);
+            color: var(--text-dim); background: var(--surface2); text-decoration: none;
+            transition: background 0.15s, color 0.15s; white-space: nowrap;
+        }
+        .nav-link:hover { background: var(--border2); color: var(--text); }
+        .nav-link--active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+        .nav-link--active:hover { background: var(--accent-dim); color: #000; }
+
+        /* ── Layout ───────────────────────────────────────────── */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+        .left-col  { display: flex; flex-direction: column; gap: 8px; }
+        .right-col { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+        /* ── Panels ───────────────────────────────────────────── */
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+            cursor: pointer; user-select: none;
+        }
+        .panel-header:hover { background: var(--surface2); }
+        .panel-title { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-dim); }
+        .panel-chevron { font-size: 10px; color: var(--text-faint); transition: transform 0.2s; }
+        .panel.collapsed .panel-chevron { transform: rotate(-90deg); }
+        .panel.collapsed .panel-body    { display: none; }
+        .panel-body { padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+
+        /* ── Force group ──────────────────────────────────────── */
+        .force-group {
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .force-group-header {
+            background: var(--surface2);
+            padding: 7px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .force-group-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            padding: 0;
+        }
+
+        /* ── Bulk pick button inside force group header ───────── */
+        .btn-pick {
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--border2);
+            background: var(--surface);
+            color: var(--text-dim);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+            flex-shrink: 0;
+        }
+        .btn-pick:hover { background: var(--border2); color: var(--text); }
+        .btn-pick.done  { border-color: #0a2a1a; background: #061510; color: var(--success); }
+
+        /* ── File slot row ────────────────────────────────────── */
+        .file-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .force-group-body .file-slot:last-child { border-bottom: none; }
+        .file-slot-freq {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-faint);
+            min-width: 38px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+        .file-slot-freq.loaded { color: var(--success); }
+        .file-slot-name {
+            font-size: 10px;
+            color: var(--text-faint);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            min-width: 0;
+        }
+        .file-slot-name.loaded { color: var(--text-dim); }
+
+        /* hidden — kept for processAllFiles to read via .files */
+        input.csv-slot { display: none; }
+
+        /* ── Form controls ────────────────────────────────────── */
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-size: 11px; font-weight: 500; color: var(--text-dim); }
+
+        input[type="text"],
+        input[type="number"] {
+            background: var(--surface2); border: 1px solid var(--border2);
+            border-radius: 5px; padding: 7px 10px;
+            font-size: 12px; font-family: 'Inter', sans-serif;
+            color: var(--text); width: 100%; transition: border-color 0.15s;
+        }
+        input[type="text"]:focus,
+        input[type="number"]:focus { outline: none; border-color: #555; }
+
+        select {
+            background: var(--surface2); border: 1px solid var(--border2);
+            border-radius: 5px; padding: 7px 10px;
+            font-size: 12px; font-family: 'Inter', sans-serif;
+            color: var(--text); width: 100%; cursor: pointer;
+        }
+        select:focus { outline: none; border-color: #555; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .divider { height: 1px; background: var(--border); margin: 2px 0; }
+
+        /* ── Bold toggles ─────────────────────────────────────── */
+        .bold-toggle-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            user-select: none;
+        }
+        .toggle-label input[type="checkbox"] {
+            width: 13px;
+            height: 13px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        /* ── Buttons ──────────────────────────────────────────── */
+        button {
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 500;
+            border: none; border-radius: 5px; padding: 8px 14px;
+            cursor: pointer; transition: background 0.15s, opacity 0.15s;
+        }
+        .btn-primary { background: var(--accent); color: #000; width: 100%; font-weight: 600; }
+        .btn-primary:hover { background: var(--accent-dim); }
+        .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); width: 100%; }
+        .btn-ghost:hover { background: var(--border2); }
+
+        /* ── Status / debug ───────────────────────────────────── */
+        .status-msg {
+            font-size: 11px; padding: 7px 10px; border-radius: 5px;
+            background: var(--surface2); color: var(--text-dim); border: 1px solid var(--border);
+        }
+        .status-msg.error   { color: var(--error);   border-color: #3a1a1a; background: #1a0a0a; }
+        .status-msg.success { color: var(--success);  border-color: #0a2a1a; background: #061510; }
+
+        .debug-info {
+            font-size: 10px; color: var(--text-faint); background: var(--surface2);
+            padding: 8px; border-radius: 4px; max-height: 110px; overflow-y: auto;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            border: 1px solid var(--border); line-height: 1.7;
+        }
+
+        /* ── Plot area ────────────────────────────────────────── */
+        .plot-wrapper {
+            border-radius: var(--radius);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        #heatmapDiv {
+            width:  698px;
+            height: 676px;
+            flex-shrink: 0;
+        }
+
+        .plot-placeholder {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); height: 676px; width: 698px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 12px; color: var(--text-faint);
+            flex-shrink: 0;
+        }
+        .plot-placeholder svg    { opacity: 0.25; }
+        .plot-placeholder span   { font-size: 13px; font-weight: 400; color: var(--text-dim); }
+        .plot-placeholder strong { color: var(--text-dim); font-weight: 500; }
+
+        /* ── Export bar ───────────────────────────────────────── */
+        .plot-export-bar {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 14px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); flex-wrap: wrap;
+            width: 100%;
+        }
+        .plot-export-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
+        .plot-export-btns  { display: flex; gap: 6px; flex-wrap: wrap; }
+        .btn-export-bar {
+            display: flex; align-items: center; gap: 5px;
+            background: var(--surface2); color: var(--text);
+            border: 1px solid var(--border2); border-radius: 5px;
+            padding: 6px 14px; font-size: 12px; font-weight: 600;
+            font-family: 'Inter', sans-serif; cursor: pointer;
+            transition: background 0.15s, color 0.15s; white-space: nowrap;
+        }
+        .btn-export-bar:hover { background: var(--border2); color: var(--accent); }
+
+        /* ── Vpp table ────────────────────────────────────────── */
+        .vpp-table-wrap {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+            width: 100%;
+        }
+        .vpp-table-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; border-bottom: 1px solid var(--border);
+            gap: 10px; flex-wrap: wrap;
+        }
+        .vpp-table-header h3 {
+            font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+            text-transform: uppercase; color: var(--text-dim);
+        }
+        .table-actions { display: flex; gap: 6px; }
+        .btn-table-action {
+            display: flex; align-items: center; gap: 5px;
+            background: var(--surface2); color: var(--text-dim);
+            border: 1px solid var(--border2); border-radius: 5px;
+            padding: 5px 10px; font-size: 11px; font-weight: 500;
+            font-family: 'Inter', sans-serif; cursor: pointer;
+            transition: background 0.15s, color 0.15s; white-space: nowrap;
+        }
+        .btn-table-action:hover { background: var(--border2); color: var(--text); }
+        .btn-table-action.copied { color: var(--success); border-color: #0a2a1a; background: #061510; }
+        #vppTableDiv table { width: 100%; border-collapse: collapse; }
+        #vppTableDiv th {
+            padding: 8px 14px; text-align: center; font-size: 11px; font-weight: 600;
+            color: var(--text-dim); background: var(--surface2);
+            border-bottom: 1px solid var(--border);
+        }
+        #vppTableDiv th:first-child { text-align: left; }
+        #vppTableDiv td {
+            padding: 7px 14px; border-bottom: 1px solid var(--border);
+            font-size: 12px; color: var(--text); text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+        #vppTableDiv td:first-child { text-align: left; font-weight: 600; color: var(--text-dim); }
+        #vppTableDiv tr:last-child td { border-bottom: none; }
+
+        /* ── Footer ───────────────────────────────────────────── */
+        .site-footer {
+            margin-top: 32px; padding: 16px 0 20px;
+            border-top: 1px solid var(--border);
+            text-align: center; font-size: 12px; color: var(--text-faint); letter-spacing: 0.2px;
+        }
+        .site-footer strong { color: var(--text-dim); font-weight: 600; }
+
+        .hidden { display: none !important; }
+
+        @media (max-width: 1100px) { .main-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <h1>TENG Heatmap Plotter</h1>
+        <p>25 CSV files · Vpp matrix · Publication-quality heatmap</p>
+        <nav class="site-nav">
+            <a href="index.html" class="nav-link">Voltage Plotter</a>
+            <a href="heatmap.html" class="nav-link nav-link--active">Heatmap Plotter</a>
+        </nav>
+    </div>
+
+    <div class="main-grid">
+
+        <!-- ── Left Column ──────────────────────────────────── -->
+        <div class="left-col">
+
+            <!-- Upload panel -->
+            <div class="panel" id="uploadPanel">
+                <div class="panel-header" onclick="togglePanel('uploadPanel')">
+                    <span class="panel-title">Upload CSV Files (5 Forces × 5 Frequencies)</span>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div id="forceGroups"></div>
+                    <button class="btn-primary" onclick="processAllFiles()">Generate Heatmap</button>
+                    <div class="status-msg" id="uploadStatus">For each force, click "Choose 5 files" to pick all 5 frequency CSVs at once</div>
+                    <div class="debug-info hidden" id="debugInfo"></div>
+                </div>
+            </div>
+
+            <!-- Title & Labels -->
+            <div class="panel collapsed" id="customSection">
+                <div class="panel-header" onclick="togglePanel('customSection')">
+                    <span class="panel-title">Title &amp; Labels</span>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label>Title Line 1</label>
+                        <input type="text" id="titleLine1" value="Output Voltage (Vpp) Matrix of Solution Casted">
+                    </div>
+                    <div class="form-group">
+                        <label>Title Line 2</label>
+                        <input type="text" id="titleLine2" value="PVDF 1wt% BTO / 0.5wt% DLC Chitosan Films">
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>X-Axis Label</label>
+                            <input type="text" id="xLabel" value="Frequency (Hz)">
+                        </div>
+                        <div class="form-group">
+                            <label>Y-Axis Label</label>
+                            <input type="text" id="yLabel" value="Force (N)">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Colorbar Label</label>
+                        <input type="text" id="colorbarLabel" value="Peak-to-Peak Voltage (V)">
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Force labels -->
+                    <div class="form-group">
+                        <label>Force Values (comma-separated, bottom→top)</label>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <input type="text" id="forceValues" value="5, 10, 15, 20, 25" style="flex:1;">
+                            <input type="text" id="forceSuffix" value=" N" style="width:56px;" placeholder="suffix" title="Suffix appended to each force value">
+                        </div>
+                        <span style="font-size:10px;color:var(--text-faint);">e.g. values "5, 10" + suffix " N" → "5 N", "10 N"</span>
+                    </div>
+
+                    <!-- Frequency labels -->
+                    <div class="form-group">
+                        <label>Frequency Values (comma-separated, left→right)</label>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <input type="text" id="freqValues" value="1, 3, 5, 7, 9" style="flex:1;">
+                            <input type="text" id="freqSuffix" value=" Hz" style="width:56px;" placeholder="suffix" title="Suffix appended to each frequency value">
+                        </div>
+                        <span style="font-size:10px;color:var(--text-faint);">e.g. values "1, 3" + suffix " Hz" → "1 Hz", "3 Hz"</span>
+                    </div>
+
+                    <!-- Cell annotation suffix -->
+                    <div class="form-group">
+                        <label>Cell Value Suffix</label>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">Preview:</span>
+                            <span id="cellSuffixPreview" style="font-size:12px;color:var(--accent-dim);background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:4px 10px;font-family:'SF Mono','Fira Code',monospace;">3.45 V</span>
+                            <input type="text" id="cellSuffix" value=" V" style="width:56px;" placeholder="suffix" title="Suffix appended to the Vpp number in each cell" oninput="updateCellSuffixPreview()">
+                        </div>
+                        <span style="font-size:10px;color:var(--text-faint);">Leave blank for number only. Use " V" for volts, " mV" for millivolts, etc.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Style -->
+            <div class="panel collapsed" id="styleSection">
+                <div class="panel-header" onclick="togglePanel('styleSection')">
+                    <span class="panel-title">Style &amp; Scale</span>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div class="form-group">
+                        <label>Colorscale</label>
+                        <select id="colorscale">
+                            <option value="YlToRd" selected>Yellow → Red (default)</option>
+                            <option value="Turbo">Turbo</option>
+                            <option value="Viridis_r">Viridis</option>
+                            <option value="Jet">Jet</option>
+                        </select>
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Title Size (pt)</label>
+                            <input type="number" id="titleSize" value="16" min="10" max="36">
+                        </div>
+                        <div class="form-group">
+                            <label>Axis Label Size (pt)</label>
+                            <input type="number" id="axisSize" value="14" min="8" max="28">
+                        </div>
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Colorbar Label Size (pt)</label>
+                            <input type="number" id="colorbarLabelSize" value="13" min="8" max="28">
+                        </div>
+                        <div class="form-group">
+                            <label>Colorbar Tick Size (pt)</label>
+                            <input type="number" id="tickSize" value="13" min="8" max="24">
+                        </div>
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Cell Value Size (pt)</label>
+                            <input type="number" id="annotSize" value="14" min="8" max="24">
+                        </div>
+                        <div class="form-group">
+                            <label>Decimal Places</label>
+                            <input type="number" id="decimals" value="2" min="0" max="4">
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Z Min (blank = auto)</label>
+                            <input type="number" id="zMin" placeholder="Auto">
+                        </div>
+                        <div class="form-group">
+                            <label>Z Max (blank = auto)</label>
+                            <input type="number" id="zMax" placeholder="Auto">
+                        </div>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="form-group">
+                        <label style="margin-bottom:6px;">Bold Text</label>
+                        <div class="bold-toggle-row">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="boldTitle" checked> Title
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="boldAxis" checked> Axis Labels
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="boldColorbar" checked> Colorbar Label
+                            </label>
+                            <label class="toggle-label">
+                                <input type="checkbox" id="boldCell" checked> Cell Values
+                            </label>
+                        </div>
+                    </div>
+                    <button class="btn-ghost" onclick="updatePlot()">Update Plot</button>
+                </div>
+            </div>
+
+            <!-- Export -->
+            <div class="panel collapsed" id="exportSection">
+                <div class="panel-header" onclick="togglePanel('exportSection')">
+                    <span class="panel-title">Export</span>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                        <button class="btn-ghost" onclick="exportFormat('png')">PNG</button>
+                        <button class="btn-ghost" onclick="exportFormat('jpg')">JPG</button>
+                        <button class="btn-ghost" onclick="exportFormat('svg')">SVG</button>
+                        <button class="btn-ghost" onclick="exportFormat('pdf')">PDF</button>
+                    </div>
+                    <p style="font-size:10px;color:var(--text-faint);text-align:center;">All processing happens locally — no uploads</p>
+                </div>
+            </div>
+
+        </div><!-- /left-col -->
+
+        <!-- ── Right Column ─────────────────────────────────── -->
+        <div class="right-col">
+
+            <!-- Placeholder -->
+            <div class="plot-placeholder" id="plotPlaceholder">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                    <rect x="3"  y="3"  width="4" height="4" rx="0.5" fill="currentColor" opacity="0.6"/>
+                    <rect x="10" y="3"  width="4" height="4" rx="0.5" fill="currentColor" opacity="0.4"/>
+                    <rect x="17" y="3"  width="4" height="4" rx="0.5" fill="currentColor" opacity="0.7"/>
+                    <rect x="3"  y="10" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.3"/>
+                    <rect x="10" y="10" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.8"/>
+                    <rect x="17" y="10" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+                    <rect x="3"  y="17" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+                    <rect x="10" y="17" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.9"/>
+                    <rect x="17" y="17" width="4" height="4" rx="0.5" fill="currentColor" opacity="0.3"/>
+                </svg>
+                <span>Upload 25 CSV files and click <strong>Generate Heatmap</strong></span>
+                <span style="font-size:11px;color:var(--text-faint);">5 force levels × 5 frequencies = 5×5 Vpp matrix</span>
+            </div>
+
+            <!-- Plot -->
+            <div class="plot-wrapper hidden" id="plotContainer">
+                <div id="heatmapDiv"></div>
+            </div>
+
+            <!-- Export bar -->
+            <div class="plot-export-bar hidden" id="plotExportBar">
+                <span class="plot-export-label">Export Plot</span>
+                <div class="plot-export-btns">
+                    <button class="btn-export-bar" onclick="exportFormat('png')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PNG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('jpg')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>JPG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('svg')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('pdf')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vpp table -->
+            <div class="vpp-table-wrap hidden" id="vppTableSection">
+                <div class="vpp-table-header">
+                    <h3>Vpp Matrix (V)</h3>
+                    <div class="table-actions">
+                        <button class="btn-table-action" id="copyTableBtn" onclick="copyVppTable()">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                            Copy Table
+                        </button>
+                        <button class="btn-table-action" onclick="saveVppTableImage()">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Save as Image
+                        </button>
+                    </div>
+                </div>
+                <div id="vppTableDiv"></div>
+            </div>
+
+        </div><!-- /right-col -->
+    </div><!-- /main-grid -->
+</div><!-- /container -->
+
+<footer class="site-footer">
+    <span>Made by <strong>Sathvik Acharya</strong> &copy; 2026</span>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   State
+═══════════════════════════════════════════════════════════════ */
+// vppMatrix[forceIdx][freqIdx] = Vpp value or null
+const NFORCES = 5;
+const NFREQS  = 5;
+let vppMatrix = Array.from({length: NFORCES}, () => Array(NFREQS).fill(null));
+
+/* ═══════════════════════════════════════════════════════════════
+   Boot — build upload grid
+═══════════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', buildUploadGrid);
+
+function getForceLabels() {
+    const vals   = document.getElementById('forceValues').value.split(',').map(s => s.trim());
+    const suffix = document.getElementById('forceSuffix').value;
+    return vals.map(v => v + suffix);
+}
+function getFreqLabels() {
+    const vals   = document.getElementById('freqValues').value.split(',').map(s => s.trim());
+    const suffix = document.getElementById('freqSuffix').value;
+    return vals.map(v => v + suffix);
+}
+function getCellSuffix() {
+    return document.getElementById('cellSuffix').value;
+}
+function updateCellSuffixPreview() {
+    document.getElementById('cellSuffixPreview').textContent = '3.45' + document.getElementById('cellSuffix').value;
+}
+
+function buildUploadGrid() {
+    const container   = document.getElementById('forceGroups');
+    const forceLabels = getForceLabels();
+    const freqLabels  = getFreqLabels();
+    container.innerHTML = '';
+
+    for (let fi = 0; fi < NFORCES; fi++) {
+        const group = document.createElement('div');
+        group.className = 'force-group';
+
+        // ── Header: force label + "Choose 5 files" button ──
+        const hdr = document.createElement('div');
+        hdr.className = 'force-group-header';
+
+        const hdrLabel = document.createElement('span');
+        hdrLabel.textContent = forceLabels[fi] || `Force ${fi + 1}`;
+
+        // Hidden real file input (multiple)
+        const bulk = document.createElement('input');
+        bulk.type     = 'file';
+        bulk.accept   = '.csv';
+        bulk.multiple = true;
+        bulk.style.display = 'none';
+        bulk.id       = `bulk_${fi}`;
+        bulk.addEventListener('change', () => handleBulkPick(fi, bulk));
+
+        // Visible button that triggers the hidden input
+        const pickBtn = document.createElement('button');
+        pickBtn.className   = 'btn-pick';
+        pickBtn.id          = `pickBtn_${fi}`;
+        pickBtn.textContent = 'Choose 5 files';
+        pickBtn.type        = 'button';
+        pickBtn.addEventListener('click', () => bulk.click());
+
+        hdr.appendChild(hdrLabel);
+        hdr.appendChild(bulk);
+        hdr.appendChild(pickBtn);
+        group.appendChild(hdr);
+
+        // ── Body: 5 slot rows (freq label + filename display) ──
+        const body = document.createElement('div');
+        body.className = 'force-group-body';
+
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const slot = document.createElement('div');
+            slot.className = 'file-slot';
+
+            const freqLbl = document.createElement('span');
+            freqLbl.className = 'file-slot-freq';
+            freqLbl.id        = `freqlbl_${fi}_${fj}`;
+            freqLbl.textContent = freqLabels[fj] || `${fj + 1} Hz`;
+
+            const nameLbl = document.createElement('span');
+            nameLbl.className   = 'file-slot-name';
+            nameLbl.id          = `namelbl_${fi}_${fj}`;
+            nameLbl.textContent = '— not set —';
+
+            // Hidden DataTransfer-backed input kept for processAllFiles compatibility
+            const inp = document.createElement('input');
+            inp.type    = 'file';
+            inp.accept  = '.csv';
+            inp.id      = `csv_${fi}_${fj}`;
+            inp.classList.add('csv-slot');
+
+            slot.appendChild(freqLbl);
+            slot.appendChild(nameLbl);
+            slot.appendChild(inp);
+            body.appendChild(slot);
+        }
+
+        group.appendChild(body);
+        container.appendChild(group);
+    }
+}
+
+/* Called when the user picks files via the bulk chooser for force row fi.
+   Files are sorted alphabetically (mirrors typical oscilloscope naming
+   e.g. "5N 1HZ_000.csv" → "5N 9HZ_000.csv") and assigned slot 0→4. */
+function handleBulkPick(fi, bulkInput) {
+    const files = Array.from(bulkInput.files);
+    if (files.length === 0) return;
+
+    // Sort alphabetically by filename
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+    const freqLabels = getFreqLabels();
+    const pickBtn    = document.getElementById(`pickBtn_${fi}`);
+    let assigned = 0;
+
+    for (let fj = 0; fj < NFREQS; fj++) {
+        const file    = files[fj] || null;
+        const freqLbl = document.getElementById(`freqlbl_${fi}_${fj}`);
+        const nameLbl = document.getElementById(`namelbl_${fi}_${fj}`);
+        const inp     = document.getElementById(`csv_${fi}_${fj}`);
+
+        if (file) {
+            // Assign the File object to the hidden input via DataTransfer
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            inp.files = dt.files;
+
+            freqLbl.classList.add('loaded');
+            nameLbl.classList.add('loaded');
+            nameLbl.textContent = file.name;
+            assigned++;
+        } else {
+            // Fewer than 5 files picked — clear this slot
+            inp.value = '';
+            freqLbl.classList.remove('loaded');
+            nameLbl.classList.remove('loaded');
+            nameLbl.textContent = '— not set —';
+        }
+    }
+
+    // Update pick button state
+    if (assigned === NFREQS) {
+        pickBtn.textContent = '✓ 5 files set';
+        pickBtn.classList.add('done');
+    } else {
+        pickBtn.textContent = `${assigned}/${NFREQS} set`;
+        pickBtn.classList.remove('done');
+    }
+
+    // Warn if wrong count
+    if (files.length !== NFREQS) {
+        setStatus(`Force ${fi + 1}: ${files.length} file(s) picked — expected ${NFREQS}. Extra files ignored, missing slots left blank.`, 'error');
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Panel toggle
+═══════════════════════════════════════════════════════════════ */
+function togglePanel(id) {
+    document.getElementById(id).classList.toggle('collapsed');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Status / debug helpers
+═══════════════════════════════════════════════════════════════ */
+function setStatus(msg, type = '') {
+    const el = document.getElementById('uploadStatus');
+    el.textContent = msg;
+    el.className   = 'status-msg' + (type ? ' ' + type : '');
+}
+function showDebug(lines) {
+    const el = document.getElementById('debugInfo');
+    el.innerHTML = lines.join('<br>');
+    el.classList.remove('hidden');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CSV parsing — identical logic to the voltage plotter's
+   parseCSVData + rebuildPlotData:
+     • Skip rows until BOTH col-0 (time) AND col-1 (voltage)
+       are finite numbers  ← this is the critical fix;
+       the old code only checked col-1, which matched metadata
+       rows and produced huge garbage values.
+     • Vpp = max(voltage) − min(voltage) over the full dataset.
+     • Handles comma / semicolon / tab delimiters.
+═══════════════════════════════════════════════════════════════ */
+function parseVpp(csvText) {
+    // Detect delimiter
+    let delim = ',';
+    const firstLines = csvText.substring(0, 500);
+    if ((firstLines.match(/\t/g) || []).length > (firstLines.match(/,/g) || []).length) delim = '\t';
+    else if ((firstLines.match(/;/g) || []).length > (firstLines.match(/,/g) || []).length) delim = ';';
+
+    const lines = csvText.split(/\r?\n/);
+
+    // Find the first row where BOTH col-0 AND col-1 are numeric
+    // (same condition used by parseCSVData in the voltage plotter)
+    let dataStart = -1;
+    for (let i = 0; i < Math.min(25, lines.length); i++) {
+        if (!lines[i].trim()) continue;
+        const parts = lines[i].split(delim);
+        if (parts.length >= 2 &&
+            isFinite(parseFloat(parts[0])) &&
+            isFinite(parseFloat(parts[1]))) {
+            dataStart = i;
+            break;
+        }
+    }
+    if (dataStart === -1) return null;
+
+    // Single-pass min/max on column 1 (voltage) — no array allocation
+    let vMin = Infinity, vMax = -Infinity;
+    for (let i = dataStart; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line || !line.trim()) continue;
+        // Extract col-0 and col-1 by scanning for delimiter
+        let col = 0, start = 0, t = NaN, v = NaN;
+        for (let k = 0; k <= line.length; k++) {
+            if (k === line.length || line[k] === delim) {
+                const field = line.substring(start, k).trim().replace(/^"|"$/g, '');
+                if (col === 0) t = parseFloat(field);
+                if (col === 1) { v = parseFloat(field); break; }
+                col++;
+                start = k + 1;
+            }
+        }
+        // Both must be numeric (mirrors the clean[] filter in parseCSVData)
+        if (isFinite(t) && isFinite(v)) {
+            if (v < vMin) vMin = v;
+            if (v > vMax) vMax = v;
+        }
+    }
+
+    if (!isFinite(vMin) || !isFinite(vMax)) return null;
+    return vMax - vMin;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Process all 25 files
+═══════════════════════════════════════════════════════════════ */
+function processAllFiles() {
+    // Collect all file inputs that have a file
+    const tasks = [];
+    for (let fi = 0; fi < NFORCES; fi++) {
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const inp  = document.getElementById(`csv_${fi}_${fj}`);
+            const file = inp && inp.files[0];
+            tasks.push({ fi, fj, file });
+        }
+    }
+
+    const loaded = tasks.filter(t => t.file);
+    if (loaded.length === 0) {
+        setStatus('Please upload at least one CSV file', 'error');
+        return;
+    }
+
+    setStatus(`Processing ${loaded.length} file(s)…`);
+    vppMatrix = Array.from({length: NFORCES}, () => Array(NFREQS).fill(null));
+
+    let done    = 0;
+    const logs  = [];
+    const total = loaded.length;
+
+    loaded.forEach(({ fi, fj, file }) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            const vpp = parseVpp(e.target.result);
+            const forceLabels = getForceLabels();
+            const freqLabels  = getFreqLabels();
+            const cellName    = `${forceLabels[fi] || fi} / ${freqLabels[fj] || fj}`;
+
+            if (vpp === null) {
+                logs.push(`✗ ${file.name} (${cellName}): no numeric data found`);
+                vppMatrix[fi][fj] = null;
+            } else {
+                logs.push(`✓ ${file.name} → Vpp = ${vpp.toFixed(3)} V`);
+                vppMatrix[fi][fj] = vpp;
+            }
+
+            done++;
+            if (done === total) {
+                showDebug(logs);
+                const filled = vppMatrix.flat().filter(v => v !== null).length;
+                setStatus(`Loaded ${done} file(s) — ${filled}/25 cells populated`, filled > 0 ? 'success' : 'error');
+                if (filled > 0) {
+                    showPlot();
+                }
+            }
+        };
+        reader.onerror = () => {
+            logs.push(`✗ ${file.name}: read error`);
+            done++;
+            if (done === total) { showDebug(logs); }
+        };
+        reader.readAsText(file);
+    });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Show plot for the first time
+═══════════════════════════════════════════════════════════════ */
+function showPlot() {
+    document.getElementById('plotPlaceholder').classList.add('hidden');
+    document.getElementById('plotContainer').classList.remove('hidden');
+    document.getElementById('plotExportBar').classList.remove('hidden');
+    document.getElementById('vppTableSection').classList.remove('hidden');
+
+    ['customSection', 'styleSection', 'exportSection'].forEach(id =>
+        document.getElementById(id).classList.remove('collapsed')
+    );
+
+    updatePlot();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Build & render the heatmap — matches the reference image:
+     • YlOrRd colormap, no cell gaps, thick black outer frame
+     • Cell grid drawn as SVG shapes (solid black lines)
+     • Annotation text: dark (#111) on light cells, white on dark
+     • Y-axis: 25N at top → 5N at bottom (inverted in Plotly)
+     • Bold axis/tick labels, Times New Roman throughout
+     • Colorbar with bold italic rotated label
+═══════════════════════════════════════════════════════════════ */
+function updatePlot() {
+    const forceLabels = getForceLabels();
+    const freqLabels  = getFreqLabels();
+
+    const titleSize  = parseInt(document.getElementById('titleSize').value) || 16;
+    const axisSize   = parseInt(document.getElementById('axisSize').value)  || 14;
+    const tickSize   = parseInt(document.getElementById('tickSize').value)  || 13;
+    const annotSize  = parseInt(document.getElementById('annotSize').value) || 14;
+    const colorbarLabelSize = parseInt(document.getElementById('colorbarLabelSize').value) || 13;
+    const decimals   = parseInt(document.getElementById('decimals').value);
+    const colorscaleRaw = document.getElementById('colorscale').value;
+    const cellSuffix = getCellSuffix();
+
+    // Bold flags
+    const boldTitle    = document.getElementById('boldTitle').checked;
+    const boldAxis     = document.getElementById('boldAxis').checked;
+    const boldColorbar = document.getElementById('boldColorbar').checked;
+    const boldCell     = document.getElementById('boldCell').checked;
+    const bT  = s => boldTitle    ? `<b>${s}</b>` : s;
+    const bA  = s => boldAxis     ? `<b>${s}</b>` : s;
+    const bCb = s => boldColorbar ? `<b>${s}</b>` : s;
+    const bC  = s => boldCell     ? `<b>${s}</b>` : s;
+
+    // Handle reversed colorscales. Plotly supports reversal by appending _r for
+    // built-in named scales, but YlOrRd_r and Viridis_r aren't in Plotly's list —
+    // so we build an explicit reversed array from the known stops.
+    const COLORSCALE_REVERSED = {
+        'YlToRd': [
+            [0,    '#ffffb2'],
+            [0.25, '#fecc5c'],
+            [0.5,  '#fd8d3c'],
+            [0.75, '#f03b20'],
+            [1,    '#bd0026']
+        ],
+        'YlOrRd_r': [
+            [0,   '#800026'], [0.125, '#bd0026'], [0.25,  '#e31a1c'],
+            [0.375,'#fc4e2a'], [0.5,   '#fd8d3c'], [0.625, '#feb24c'],
+            [0.75, '#fed976'], [0.875, '#ffeda0'], [1,     '#ffffcc']
+        ],
+        'Viridis_r': [
+            [0,    '#fde725'], [0.125, '#b5de2b'], [0.25,  '#6ece58'],
+            [0.375,'#35b779'], [0.5,   '#1f9e89'], [0.625, '#26828e'],
+            [0.75, '#31688e'], [0.875, '#3e4989'], [1,     '#440154']
+        ]
+    };
+    const colorscale = COLORSCALE_REVERSED[colorscaleRaw] || colorscaleRaw;
+
+    const zMinRaw = document.getElementById('zMin').value;
+    const zMaxRaw = document.getElementById('zMax').value;
+
+    // vppMatrix[0] = 5N (lowest force), vppMatrix[4] = 25N (highest)
+    // We want 5N at the BOTTOM of the plot, 25N at the TOP.
+    // Plotly heatmap category y-axis renders array[0] at the BOTTOM by default,
+    // so we keep the natural order (no reverse) and let Plotly handle it.
+    // zRows[row] maps directly to yLabels[row] — 5N at index 0 = bottom.
+    const zRows  = vppMatrix.map(row => row.map(v => v === null ? null : v));
+    const yOrder = [...forceLabels]; // 5N, 10N, 15N, 20N, 25N — natural bottom→top
+
+    // Compute overall min/max for threshold-based text colour
+    const allVals = zRows.flat().filter(v => v !== null);
+    const dataMin = zMinRaw !== '' ? parseFloat(zMinRaw) : (allVals.length ? Math.min(...allVals) : 0);
+    const dataMax = zMaxRaw !== '' ? parseFloat(zMaxRaw) : (allVals.length ? Math.max(...allVals) : 1);
+    const zMin    = zMinRaw !== '' ? parseFloat(zMinRaw) : undefined;
+    const zMax    = zMaxRaw !== '' ? parseFloat(zMaxRaw) : undefined;
+    const midVal  = dataMin + (dataMax - dataMin) * 0.55; // flip threshold
+
+    // Annotations: dark text on light cells, white on dark
+    const annotations = [];
+    for (let fi = 0; fi < NFORCES; fi++) {
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const val = zRows[fi][fj];
+            if (val === null) continue;
+            const textColor = val >= midVal ? '#ffffff' : '#111111';
+            annotations.push({
+                x: freqLabels[fj],
+                y: yOrder[fi],
+                text: bC(`${val.toFixed(decimals)}${cellSuffix}`),
+                showarrow: false,
+                font: {
+                    size:   annotSize,
+                    family: 'Times New Roman, serif',
+                    color:  textColor
+                },
+                xanchor: 'center',
+                yanchor: 'middle'
+            });
+        }
+    }
+
+    const titleLine1 = document.getElementById('titleLine1').value;
+    const titleLine2 = document.getElementById('titleLine2').value;
+    const titleText  = [titleLine1, titleLine2].filter(Boolean).join('<br>');
+
+    const trace = {
+        type:       'heatmap',
+        z:          zRows,
+        x:          freqLabels,
+        y:          yOrder,
+        colorscale: colorscale,
+        zmin:       zMin,
+        zmax:       zMax,
+        xgap:       0,
+        ygap:       0,
+        colorbar: {
+            title: {
+                text:  bCb(`<i>${document.getElementById('colorbarLabel').value}</i>`),
+                side:  'right',
+                font:  { size: colorbarLabelSize, family: 'Times New Roman, serif', color: '#e8e8e8' }
+            },
+            tickfont:   { size: tickSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+            tickformat: `.1f`,
+            outlinewidth: 0
+        },
+        hoverongaps: false,
+        hovertemplate: '<b>%{y}</b> / <b>%{x}</b><br>Vpp = %{z:.3f} V<extra></extra>'
+    };
+
+    // Draw solid black cell-border grid as shapes
+    const shapes = [];
+
+    // Inner horizontal lines (between rows)
+    for (let fi = 1; fi < NFORCES; fi++) {
+        shapes.push({
+            type: 'line', xref: 'paper', yref: 'y',
+            x0: 0, x1: 1,
+            y0: fi - 0.5, y1: fi - 0.5,
+            line: { color: '#000000', width: 1.5 }
+        });
+    }
+    // Inner vertical lines (between columns)
+    for (let fj = 1; fj < NFREQS; fj++) {
+        shapes.push({
+            type: 'line', xref: 'x', yref: 'paper',
+            x0: fj - 0.5, x1: fj - 0.5,
+            y0: 0, y1: 1,
+            line: { color: '#000000', width: 1.5 }
+        });
+    }
+
+    // Fixed pixel size so that the 5×5 grid cells are square.
+    // Plot area = 500×500px → each cell = 100×100px.
+    // Total canvas = plot area + margins.
+    const MARGIN = { l: 88, r: 110, t: 88, b: 88 };
+    const PLOT_SIZE = 500; // square plot area
+
+    const layout = {
+        title: {
+            text: bT(titleText),
+            font: { size: titleSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+            x: 0.5, xanchor: 'center', pad: { t: 10, b: 0 }
+        },
+        xaxis: {
+            title: {
+                text:     bA(document.getElementById('xLabel').value),
+                font:     { size: axisSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+                standoff: 12
+            },
+            tickfont:  { size: tickSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
+            side: 'bottom', ticklen: 6, ticks: 'outside',
+            showgrid: false, zeroline: false,
+            scaleanchor: 'y', scaleratio: 1
+        },
+        yaxis: {
+            title: {
+                text:     bA(document.getElementById('yLabel').value),
+                font:     { size: axisSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+                standoff: 12
+            },
+            tickfont:  { size: tickSize, family: 'Times New Roman, serif', color: '#e8e8e8' },
+            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
+            ticklen: 6, ticks: 'outside',
+            showgrid: false, zeroline: false
+        },
+        annotations,
+        shapes,
+        plot_bgcolor:  'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        margin: MARGIN,
+        width:  PLOT_SIZE + MARGIN.l + MARGIN.r,
+        height: PLOT_SIZE + MARGIN.t + MARGIN.b
+    };
+
+    Plotly.newPlot('heatmapDiv', [trace], layout, {
+        responsive:     false,   // fixed size — prevents stretching into rectangles
+        displayModeBar: false,
+        staticPlot:     true
+    });
+
+    renderVppTable(forceLabels, freqLabels, decimals);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Vpp summary table
+═══════════════════════════════════════════════════════════════ */
+function renderVppTable(forceLabels, freqLabels, decimals) {
+    const cellSuffix = getCellSuffix();
+    let html = '<table><thead><tr><th>Force \\ Freq</th>';
+    freqLabels.forEach(f => { html += `<th>${f}</th>`; });
+    html += '</tr></thead><tbody>';
+
+    for (let fi = 0; fi < NFORCES; fi++) {
+        html += `<tr><td>${forceLabels[fi] || `Force ${fi+1}`}</td>`;
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const v = vppMatrix[fi][fj];
+            html += `<td>${v !== null ? v.toFixed(decimals) + cellSuffix : '—'}</td>`;
+        }
+        html += '</tr>';
+    }
+    html += '</tbody></table>';
+    document.getElementById('vppTableDiv').innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Export — use Plotly.toImage so the heatmap raster tiles,
+   colorbar, and all margins are captured at full resolution.
+   The SVG-scraping approach left unfilled strips at the edges
+   because Plotly clips its <image> tiles to the plot area rect
+   and that clip doesn't survive serialization at 2× scale.
+═══════════════════════════════════════════════════════════════ */
+function exportFormat(fmt) {
+    const hasData = vppMatrix.flat().some(v => v !== null);
+    if (!hasData) { setStatus('No data to export — generate the heatmap first', 'error'); return; }
+
+    const name = `TENG_heatmap_${new Date().toISOString().slice(0, 10)}`;
+
+    // Re-render a light-mode version of the layout at export resolution
+    const forceLabels = getForceLabels();
+    const freqLabels  = getFreqLabels();
+    const titleSize   = parseInt(document.getElementById('titleSize').value) || 16;
+    const axisSize    = parseInt(document.getElementById('axisSize').value)  || 14;
+    const tickSize    = parseInt(document.getElementById('tickSize').value)  || 13;
+    const annotSize   = parseInt(document.getElementById('annotSize').value) || 14;
+    const colorbarLabelSize = parseInt(document.getElementById('colorbarLabelSize').value) || 13;
+    const decimals    = parseInt(document.getElementById('decimals').value);
+    const cellSuffix  = getCellSuffix();
+    const colorscaleRaw = document.getElementById('colorscale').value;
+
+    // Same bold flags as updatePlot — export reflects current UI state
+    const boldTitle    = document.getElementById('boldTitle').checked;
+    const boldAxis     = document.getElementById('boldAxis').checked;
+    const boldColorbar = document.getElementById('boldColorbar').checked;
+    const boldCell     = document.getElementById('boldCell').checked;
+    const bT  = s => boldTitle    ? `<b>${s}</b>` : s;
+    const bA  = s => boldAxis     ? `<b>${s}</b>` : s;
+    const bCb = s => boldColorbar ? `<b>${s}</b>` : s;
+    const bC  = s => boldCell     ? `<b>${s}</b>` : s;
+
+    const COLORSCALE_REVERSED = {
+        'YlToRd': [
+            [0,    '#ffffb2'],
+            [0.25, '#fecc5c'],
+            [0.5,  '#fd8d3c'],
+            [0.75, '#f03b20'],
+            [1,    '#bd0026']
+        ],
+        'Viridis_r': [
+            [0,'#fde725'],[0.125,'#b5de2b'],[0.25,'#6ece58'],
+            [0.375,'#35b779'],[0.5,'#1f9e89'],[0.625,'#26828e'],
+            [0.75,'#31688e'],[0.875,'#3e4989'],[1,'#440154']
+        ]
+    };
+    const colorscale = COLORSCALE_REVERSED[colorscaleRaw] || colorscaleRaw;
+
+    const zRows  = vppMatrix.map(row => row.map(v => v === null ? null : v));
+    const yOrder = [...forceLabels];
+
+    const allVals = zRows.flat().filter(v => v !== null);
+    const zMinRaw = document.getElementById('zMin').value;
+    const zMaxRaw = document.getElementById('zMax').value;
+    const dataMin = zMinRaw !== '' ? parseFloat(zMinRaw) : (allVals.length ? Math.min(...allVals) : 0);
+    const dataMax = zMaxRaw !== '' ? parseFloat(zMaxRaw) : (allVals.length ? Math.max(...allVals) : 1);
+    const zMin    = zMinRaw !== '' ? parseFloat(zMinRaw) : undefined;
+    const zMax    = zMaxRaw !== '' ? parseFloat(zMaxRaw) : undefined;
+    const midVal  = dataMin + (dataMax - dataMin) * 0.55;
+
+    // Light-mode annotation colours (dark text on light cells, dark text always for export)
+    const exportAnnotations = [];
+    for (let fi = 0; fi < NFORCES; fi++) {
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const val = zRows[fi][fj];
+            if (val === null) continue;
+            const textColor = val >= midVal ? '#ffffff' : '#111111';
+            exportAnnotations.push({
+                x: freqLabels[fj], y: yOrder[fi],
+                text: bC(`${val.toFixed(decimals)}${cellSuffix}`),
+                showarrow: false,
+                font: { size: annotSize, family: 'Times New Roman, serif', color: textColor },
+                xanchor: 'center', yanchor: 'middle'
+            });
+        }
+    }
+
+    // Rebuild shapes with black lines
+    const exportShapes = [];
+    for (let fi = 1; fi < NFORCES; fi++) {
+        exportShapes.push({ type:'line', xref:'paper', yref:'y', x0:0, x1:1, y0:fi-0.5, y1:fi-0.5, line:{color:'#000000',width:1.5} });
+    }
+    for (let fj = 1; fj < NFREQS; fj++) {
+        exportShapes.push({ type:'line', xref:'x', yref:'paper', x0:fj-0.5, x1:fj-0.5, y0:0, y1:1, line:{color:'#000000',width:1.5} });
+    }
+
+    const titleLine1 = document.getElementById('titleLine1').value;
+    const titleLine2 = document.getElementById('titleLine2').value;
+    const titleText  = [titleLine1, titleLine2].filter(Boolean).join('<br>');
+
+    const EXPORT_SIZE = 700; // square plot area for export
+    const MARGIN = { l: 100, r: 130, t: 100, b: 100 };
+
+    const exportTrace = {
+        type: 'heatmap', z: zRows, x: freqLabels, y: yOrder,
+        colorscale, zmin: zMin, zmax: zMax, xgap: 0, ygap: 0,
+        colorbar: {
+            title: { text: bCb(`<i>${document.getElementById('colorbarLabel').value}</i>`), side: 'right',
+                     font: { size: colorbarLabelSize, family: 'Times New Roman, serif', color: '#000000' } },
+            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
+            tickformat: '.1f', outlinewidth: 1, outlinecolor: '#000000'
+        },
+        hoverongaps: false
+    };
+
+    const exportLayout = {
+        title: { text: bT(titleText),
+                 font: { size: titleSize, family: 'Times New Roman, serif', color: '#000000' },
+                 x: 0.5, xanchor: 'center', pad: { t: 10, b: 0 } },
+        xaxis: {
+            title: { text: bA(document.getElementById('xLabel').value),
+                     font: { size: axisSize, family: 'Times New Roman, serif', color: '#000000' }, standoff: 12 },
+            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
+            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
+            side: 'bottom', ticklen: 6, ticks: 'outside', showgrid: false, zeroline: false,
+            scaleanchor: 'y', scaleratio: 1
+        },
+        yaxis: {
+            title: { text: bA(document.getElementById('yLabel').value),
+                     font: { size: axisSize, family: 'Times New Roman, serif', color: '#000000' }, standoff: 12 },
+            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
+            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
+            ticklen: 6, ticks: 'outside', showgrid: false, zeroline: false
+        },
+        annotations: exportAnnotations,
+        shapes: exportShapes,
+        plot_bgcolor:  '#ffffff',
+        paper_bgcolor: '#ffffff',
+        margin: MARGIN,
+        width:  EXPORT_SIZE + MARGIN.l + MARGIN.r,
+        height: EXPORT_SIZE + MARGIN.t + MARGIN.b
+    };
+
+    if (fmt === 'svg') {
+        Plotly.toImage('heatmapDiv', { format: 'svg', width: exportLayout.width, height: exportLayout.height,
+            scale: 1, imageDataOnly: false,
+            // Temporarily render light layout, then restore
+        }).then(() => {}); // SVG path: use dedicated render below
+
+        // For SVG we need to render to a temp div with white background
+        const tmp = document.createElement('div');
+        tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+        document.body.appendChild(tmp);
+        Plotly.newPlot(tmp, [exportTrace], exportLayout, { staticPlot: true, displayModeBar: false })
+            .then(() => Plotly.toImage(tmp, { format: 'svg', width: exportLayout.width, height: exportLayout.height }))
+            .then(dataUrl => {
+                document.body.removeChild(tmp);
+                const link = document.createElement('a');
+                link.download = name + '.svg';
+                link.href = dataUrl;
+                link.click();
+            });
+
+    } else {
+        // PNG / JPG / PDF — render to temp div with white bg, capture as PNG
+        const tmp = document.createElement('div');
+        tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+        document.body.appendChild(tmp);
+
+        Plotly.newPlot(tmp, [exportTrace], exportLayout, { staticPlot: true, displayModeBar: false })
+            .then(() => Plotly.toImage(tmp, { format: 'png', width: exportLayout.width, height: exportLayout.height, scale: 2 }))
+            .then(dataUrl => {
+                document.body.removeChild(tmp);
+
+                if (fmt === 'png') {
+                    const link = document.createElement('a');
+                    link.download = name + '.png'; link.href = dataUrl; link.click();
+
+                } else if (fmt === 'jpg') {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = exportLayout.width * 2; canvas.height = exportLayout.height * 2;
+                        const ctx = canvas.getContext('2d');
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0);
+                        const link = document.createElement('a');
+                        link.download = name + '.jpg';
+                        link.href = canvas.toDataURL('image/jpeg', 0.95); link.click();
+                    };
+                    img.src = dataUrl;
+
+                } else if (fmt === 'pdf') {
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                    // Fit within A4 landscape (277×190mm usable)
+                    const aspect = exportLayout.width / exportLayout.height;
+                    const pdfW = 277, pdfH = Math.min(190, pdfW / aspect);
+                    const pdfTop = (190 - pdfH) / 2 + 10;
+                    pdf.addImage(dataUrl, 'PNG', 10, pdfTop, pdfW, pdfH);
+                    pdf.save(name + '.pdf');
+                }
+            });
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Vpp table — Copy as TSV and Save as Image
+═══════════════════════════════════════════════════════════════ */
+function copyVppTable() {
+    const table = document.querySelector('#vppTableDiv table');
+    if (!table) return;
+    const tsv = Array.from(table.querySelectorAll('tr'))
+        .map(row => Array.from(row.querySelectorAll('th, td'))
+            .map(cell => cell.innerText.trim()).join('\t'))
+        .join('\n');
+
+    navigator.clipboard.writeText(tsv).then(() => {
+        const btn = document.getElementById('copyTableBtn');
+        btn.classList.add('copied');
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+        setTimeout(() => {
+            btn.classList.remove('copied');
+            btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Table`;
+        }, 2000);
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = tsv; ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+    });
+}
+
+function saveVppTableImage() {
+    const srcTable = document.querySelector('#vppTableDiv table');
+    if (!srcTable) return;
+
+    const wrap = document.createElement('div');
+    wrap.style.cssText = [
+        'position:fixed', 'left:-9999px', 'top:0',
+        'background:#ffffff', 'padding:20px 24px',
+        'font-family:Times New Roman,serif',
+        'border:1px solid #cccccc', 'border-radius:6px',
+        'display:inline-block'
+    ].join(';');
+
+    const tbl = srcTable.cloneNode(true);
+    tbl.style.cssText = 'border-collapse:collapse;min-width:300px;';
+
+    tbl.querySelectorAll('th').forEach(th => {
+        th.style.cssText = [
+            'padding:9px 18px', 'text-align:center',
+            'font-size:13px', 'font-weight:700', 'color:#111111',
+            'background:#f2f2f2', 'border-bottom:2px solid #999999',
+            'border-top:1px solid #cccccc'
+        ].join(';');
+    });
+    const ths = tbl.querySelectorAll('th');
+    if (ths.length) ths[0].style.textAlign = 'left';
+
+    tbl.querySelectorAll('td').forEach(td => {
+        td.style.cssText = [
+            'padding:7px 18px', 'font-size:13px',
+            'color:#222222', 'border-bottom:1px solid #e0e0e0',
+            'text-align:center'
+        ].join(';');
+    });
+    tbl.querySelectorAll('tr').forEach(tr => {
+        const tds = tr.querySelectorAll('td');
+        if (tds.length) {
+            tds[0].style.textAlign  = 'left';
+            tds[0].style.fontWeight = '600';
+            tds[0].style.color      = '#555555';
+        }
+    });
+    const lastRow = tbl.querySelector('tbody tr:last-child');
+    if (lastRow) lastRow.querySelectorAll('td').forEach(td => td.style.borderBottom = 'none');
+
+    wrap.appendChild(tbl);
+    document.body.appendChild(wrap);
+
+    html2canvas(wrap, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false })
+        .then(canvas => {
+            document.body.removeChild(wrap);
+            const link = document.createElement('a');
+            link.download = `TENG_vpp_matrix_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        })
+        .catch(() => document.body.removeChild(wrap));
+}
+</script>
+</body>
+</html>
