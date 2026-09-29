@@ -315,7 +315,7 @@ This makes the process faster, more convenient, and easier to reproduce. It also
 
 ## Author
 
-**B G Sathvik Acharya
+B G Sathvik Acharya
 
 GitHub: [@sathvikacharyaa](https://github.com/sathvikacharyaa)
 
