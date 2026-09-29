@@ -10,7 +10,7 @@ The application allows users to upload CSV files obtained from TENG measurements
 
 ## Project Overview
 
-After performing TENG measurements, the experimental data is usually saved as CSV files. To analyze this data, users often need to import it into Origin or write code using Python, MATLAB, or another programming language.
+After performing TENG measurements, the experimental data is usually saved as CSV files. To analyse this data, users often need to import it into Origin or write code using Python, MATLAB, or another programming language.
 
 This process can be repetitive and time-consuming, particularly when measurements are performed for several frequencies or applied forces.
 
