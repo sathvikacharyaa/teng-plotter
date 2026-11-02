@@ -34,18 +34,32 @@
             --radius:    8px;
         }
 
+        html, body { height: 100%; }
+
         body {
             font-family: 'Inter', system-ui, sans-serif;
             background: var(--bg);
             color: var(--text);
             padding: 20px;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
             font-size: 13px;
             line-height: 1.5;
         }
 
         /* ── Layout ───────────────────────────────────────────── */
-        .container   { max-width: 1440px; margin: 0 auto; }
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
         .header {
             padding: 24px 0 20px;
@@ -55,6 +69,7 @@
             align-items: baseline;
             gap: 16px;
             flex-wrap: wrap;
+            flex-shrink: 0;
         }
         .header h1 {
             font-size: 22px;
@@ -72,13 +87,24 @@
             display: grid;
             grid-template-columns: 340px 1fr;
             gap: 16px;
-            align-items: start;
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .left-col {
             display: flex;
             flex-direction: column;
             gap: 8px;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 4px;
+            padding-bottom: 8px;
+        }
+        .left-col > .panel {
+            flex-shrink: 0;
         }
 
         /* ── Panels ───────────────────────────────────────────── */
@@ -136,7 +162,8 @@
         }
 
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             background: var(--surface2);
             border: 1px solid var(--border2);
             border-radius: 5px;
@@ -148,9 +175,10 @@
             transition: border-color 0.15s;
         }
         input[type="text"]:focus,
-        input[type="number"]:focus {
+        input[type="number"]:focus,
+        select:focus {
             outline: none;
-            border-color: #555;
+            border-color: #000000;
         }
 
         input[type="file"] {
@@ -180,18 +208,59 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            background: var(--surface2);
+            padding: 6px 10px;
+            border-radius: 5px;
+            border: 1px solid var(--border2);
+            transition: border-color 0.15s;
+        }
+        .file-input-row:hover {
+            border-color: var(--border);
         }
         .file-input-row label {
             font-size: 11px;
+            color: var(--text-dim);
+            font-weight: 600;
+            min-width: 44px;
+        }
+        .file-input-row .row-remove-btn {
+            background: none;
+            border: none;
             color: var(--text-faint);
+            cursor: pointer;
+            padding: 2px 6px;
+            font-size: 16px;
+            line-height: 1;
+            border-radius: 4px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .file-input-row .row-remove-btn:hover {
+            color: var(--error);
+            background: rgba(231, 76, 60, 0.15);
+        }
+
+        .btn-outline-action {
+            background: var(--surface2);
+            border: 1px dashed var(--border2);
+            color: var(--text-dim);
+            border-radius: 5px;
+            padding: 6px 12px;
+            font-size: 11px;
             font-weight: 500;
-            min-width: 46px;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .btn-outline-action:hover {
+            border-color: var(--border);
+            color: var(--text);
+            background: var(--border2);
         }
 
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
         /* Color grid */
-        .color-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+        .color-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         .color-picker-item {
             display: flex;
             flex-direction: column;
@@ -268,16 +337,48 @@
             line-height: 1.6;
         }
 
-        /* ── Right Panel ──────────────────────────────────────── */
+        /* ── Custom Scrollbars ────────────────────────────────── */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-faint);
+        }
+
+        .left-col,
+        .right-col,
+        .debug-info {
+            scrollbar-width: thin;
+            scrollbar-color: var(--border2) transparent;
+        }
+
+        /* ── Right Panel (One unified scroll for preview and table) ─── */
         .right-col {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 4px;
+            padding-bottom: 8px;
+            flex: 1;
         }
 
         .plot-wrapper {
             border-radius: var(--radius);
             overflow: hidden;
+            flex-shrink: 0;
+            background: #ffffff;
+            border: 1px solid var(--border);
         }
 
         #plotDiv {
@@ -290,6 +391,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             height: 574px;
+            flex-shrink: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -306,6 +408,7 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
+            flex-shrink: 0;
             overflow: hidden;
         }
         .summary-header {
@@ -372,6 +475,7 @@
         }
         #summaryTable {
             padding: 0;
+            overflow-x: auto;
         }
         #summaryTable table {
             width: 100%;
@@ -476,10 +580,88 @@
             height: 4px;
         }
 
+        /* ── Plot export bar ──────────────────────────────────────── */
+        .plot-export-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            flex-wrap: wrap;
+        }
+        .plot-export-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .plot-export-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-export-bar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .btn-export-bar:hover { background: var(--border2); color: var(--accent); }
+
+        /* ── Site Nav ─────────────────────────────────────────── */
+        .site-nav {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+            align-items: center;
+        }
+        .nav-link {
+            font-size: 12px;
+            font-weight: 500;
+            font-family: 'Inter', sans-serif;
+            padding: 6px 14px;
+            border-radius: 5px;
+            border: 1px solid var(--border2);
+            color: var(--text-dim);
+            background: var(--surface2);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+        }
+        .nav-link:hover {
+            background: var(--border2);
+            color: var(--text);
+        }
+        .nav-link--active {
+            background: var(--accent);
+            color: #000000;
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        .nav-link--active:hover {
+            background: var(--accent-dim);
+            color: #000000;
+        }
+
         /* ── Footer ───────────────────────────────────────────── */
         .site-footer {
-            margin-top: 32px;
-            padding: 16px 0 20px;
+            flex-shrink: 0;
+            margin-top: 12px;
+            padding: 12px 0 4px;
             border-top: 1px solid var(--border);
             text-align: center;
             font-size: 12px;
@@ -495,7 +677,28 @@
         .hidden { display: none !important; }
 
         @media (max-width: 1024px) {
-            .main-grid { grid-template-columns: 1fr; }
+            html, body { height: auto; }
+            body {
+                overflow: auto;
+                height: auto;
+                display: block;
+            }
+            .container {
+                height: auto;
+                overflow: visible;
+                flex: none;
+                display: block;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+                overflow: visible;
+                flex: none;
+            }
+            .left-col, .right-col {
+                overflow: visible;
+                max-height: none;
+            }
+            .summary-wrap { flex: none; overflow: hidden; }
         }
     </style>
 </head>
@@ -507,6 +710,11 @@
     <div class="header">
         <h1>TENG Voltage Analysis Plotter</h1>
         <p>Publication-quality plots · CSV import · Multi-format export</p>
+        <nav class="site-nav">
+            <a href="index.html" class="nav-link nav-link--active">Voltage Plotter</a>
+            <a href="resistor.html" class="nav-link">V-I vs Resistor</a>
+            <a href="heatmap.html" class="nav-link">Heatmap Plotter</a>
+        </nav>
     </div>
 
     <div class="main-grid">
@@ -521,7 +729,19 @@
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
-                    <div id="fileInputs" style="display:flex;flex-direction:column;gap:6px;"></div>
+                    <div style="display:flex;gap:6px;margin-bottom:2px;">
+                        <input type="file" id="batchFileInput" multiple accept=".csv" style="display:none;" onchange="handleBatchFiles(this.files)">
+                        <button type="button" class="btn-ghost" onclick="document.getElementById('batchFileInput').click()" style="flex:1;font-size:11px;padding:6px 10px;">
+                            📁 Choose multiple CSVs at once
+                        </button>
+                        <button type="button" class="btn-ghost" onclick="clearAllFiles()" style="font-size:11px;padding:6px 10px;" title="Clear all chosen files">
+                            Clear All
+                        </button>
+                    </div>
+                    <div id="fileInputs" style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;padding-right:4px;"></div>
+                    <div style="display:flex;gap:6px;">
+                        <button type="button" class="btn-outline-action" onclick="addFileInputSlot()">+ Add File Slot</button>
+                    </div>
                     <button class="btn-primary" onclick="processFiles()">Generate Plot</button>
                     <div class="status-msg" id="uploadStatus">Ready to upload files</div>
                     <div class="debug-info hidden" id="debugInfo"></div>
@@ -555,10 +775,55 @@
                             <span style="font-size:10px;color:var(--text-faint);margin-left:4px;">px offset</span>
                         </div>
                     </div>
+
+                    <!-- Series Parameter / Label Type Option -->
                     <div class="form-group">
-                        <label>Frequency Labels (comma-separated)</label>
-                        <input type="text" id="freqInput" value="1 Hz, 3 Hz, 5 Hz, 7 Hz, 9 Hz">
+                        <label for="labelTypeSelect">Label Option</label>
+                        <select id="labelTypeSelect" onchange="onLabelTypeChange(this.value)">
+                            <option value="frequency" selected>Frequency</option>
+                            <option value="concentration">Concentration</option>
+                            <option value="resistor">Resistor</option>
+                            <option value="custom">Custom</option>
+                        </select>
                     </div>
+
+                    <div id="resistorBanner" style="display:none;margin-top:-4px;margin-bottom:6px;padding:9px 12px;background:var(--surface2);border:1px solid #d62728;border-radius:6px;font-size:11px;">
+                        <div style="font-weight:600;color:var(--text);margin-bottom:3px;">⚡ Studying Voltage &amp; Current vs. Load Resistance?</div>
+                        <div style="color:var(--text-dim);font-size:11px;margin-bottom:6px;">Plot dual Y-axis curves (Vpp &amp; Ipp vs. R) with the specialized Resistance Plotter.</div>
+                        <a href="resistor.html" class="btn-ghost" style="display:inline-block;text-align:center;text-decoration:none;padding:4px 10px;font-weight:600;border-color:#d62728;color:#ff6b6b;font-size:11px;">
+                            Open V-I vs Resistor Plotter →
+                        </a>
+                    </div>
+
+                    <div class="form-group">
+                        <div style="display:flex;justify-content:space-between;align-items:center;">
+                            <label id="freqInputLabel">Frequency Labels (comma-separated, blank = hide)</label>
+                            <button type="button" class="btn-ghost" onclick="resetLabelsToPreset()" style="padding:2px 8px;font-size:10px;width:auto;" title="Reset labels to default preset">Reset</button>
+                        </div>
+                        <input type="text" id="freqInput" value="1 Hz, 3 Hz, 5 Hz, 7 Hz, 9 Hz, 11 Hz, 13 Hz, 15 Hz, 17 Hz, 19 Hz, 21 Hz, 23 Hz, 25 Hz, 27 Hz">
+                    </div>
+                    <div class="form-group">
+                        <label>Vpp Peak Label (blank = hide)</label>
+                        <input type="text" id="vppAnnotationFormat" value="Vpp = {v} V" placeholder="e.g. Vpp = {v} V (leave blank to hide)">
+                    </div>
+
+                    <!-- Trace spacing between consecutive peak-to-peak segments -->
+                    <div class="divider"></div>
+                    <div class="form-group">
+                        <label style="margin-bottom:6px;">Trace Spacing</label>
+                        <label class="toggle-label" style="margin-bottom:8px;">
+                            <input type="checkbox" id="enableSpacing" onchange="toggleSpacingInput()">
+                            Enable spacing between parameter traces
+                        </label>
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Spacing (s)</label>
+                                <input type="number" id="traceSpacing" value="0.5" min="0" step="0.1" disabled onchange="updatePlot()">
+                            </div>
+                        </div>
+                        <p id="traceSpacingDesc" style="font-size:10px;color:var(--text-faint);margin-top:2px;">Adds a time gap between consecutive frequency traces (e.g. between 1 Hz and 3 Hz)</p>
+                    </div>
+
                     <div class="two-col">
                         <div class="form-group">
                             <label>X-Axis Label</label>
@@ -581,6 +846,101 @@
                 <div class="panel-body">
                     <div class="color-grid" id="colorGrid">
                         <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div class="panel collapsed" id="legendSection">
+                <div class="panel-header" onclick="togglePanel('legendSection')">
+                    <span class="panel-title">Legend</span>
+                    <span class="panel-chevron">▼</span>
+                </div>
+                <div class="panel-body">
+                    <label class="toggle-label" style="margin-bottom:10px;">
+                        <input type="checkbox" id="enableLegend" onchange="toggleLegend()">
+                        Enable custom legend
+                    </label>
+
+                    <div id="legendOptions" style="display:flex;flex-direction:column;gap:12px;">
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Position</label>
+                                <select id="legendPosition" onchange="updatePlot()">
+                                    <option value="top-right">Top Right</option>
+                                    <option value="top-left">Top Left</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Font Size (pt)</label>
+                                <input type="number" id="legendFontSize" value="13" min="8" max="24" onchange="updatePlot()">
+                            </div>
+                        </div>
+
+                        <!-- Surrounding box -->
+                        <label class="toggle-label">
+                            <input type="checkbox" id="legendBox" checked onchange="updatePlot()">
+                            Surrounding box
+                        </label>
+
+                        <div class="two-col" id="legendBoxOpts">
+                            <div class="form-group">
+                                <label>Border Color</label>
+                                <input type="color" id="legendBorderColor" value="#888888" onchange="updatePlot()">
+                            </div>
+                            <div class="form-group">
+                                <label>Border Width</label>
+                                <input type="number" id="legendBorderWidth" value="1" min="0" max="10" step="0.5" onchange="updatePlot()">
+                            </div>
+                        </div>
+
+                        <label class="toggle-label">
+                            <input type="checkbox" id="legendDashed" onchange="updatePlot()">
+                            Dashed border
+                        </label>
+
+                        <div class="two-col" id="legendBoxSize">
+                            <div class="form-group">
+                                <label>Box Width (%)</label>
+                                <input type="number" id="legendBoxWidth" value="22" min="5" max="60" onchange="updatePlot()">
+                            </div>
+                            <div class="form-group">
+                                <label>Box Height (%)</label>
+                                <input type="number" id="legendBoxHeight" value="0" min="0" max="90" onchange="updatePlot()">
+                            </div>
+                        </div>
+                        <p style="font-size:10px;color:var(--text-faint);margin-top:-6px;">Height = 0 auto-sizes to the number of items.</p>
+
+                        <label class="toggle-label">
+                            <input type="checkbox" id="legendRemoveDash" onchange="updatePlot()">
+                            Remove dash
+                        </label>
+
+                        <label class="toggle-label" id="legendCenterTextToggle">
+                            <input type="checkbox" id="legendCenterText" onchange="updatePlot()">
+                            Center text when dash is removed
+                        </label>
+
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Color Dash Length (px)</label>
+                                <input type="number" id="legendDashLength" value="30" min="30" max="80" step="1" onchange="updatePlot()" oninput="updatePlot()">
+                            </div>
+                            <div class="form-group">
+                                <label>Color Dash Thickness</label>
+                                <input type="number" id="legendDashWidth" value="2.5" min="0" max="10" step="0.1" onchange="updatePlot()" oninput="updatePlot()">
+                            </div>
+                        </div>
+                        <p style="font-size:10px;color:var(--text-faint);margin-top:-6px;">Length of the colored line next to each legend label. Plotly requires at least 30 px.</p>
+
+                        <div class="divider"></div>
+
+                        <!-- Legend items -->
+                        <div class="form-group">
+                            <label style="margin-bottom:6px;">Legend Items</label>
+                            <div id="legendItemsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <button class="btn-ghost" style="margin-top:8px;" onclick="addLegendItem()">+ Add Legend Item</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -621,7 +981,20 @@
                             <label class="toggle-label"><input type="checkbox" id="boldTitle" checked> Title</label>
                             <label class="toggle-label"><input type="checkbox" id="boldScale" checked> Scale &amp; Labels</label>
                             <label class="toggle-label"><input type="checkbox" id="boldAnnot" checked> Annotations</label>
-                            <label class="toggle-label"><input type="checkbox" id="boldFreq" checked> Freq Label</label>
+                            <label class="toggle-label"><input type="checkbox" id="boldFreq" checked> <span id="boldFreqText">Freq Label</span></label>
+                        </div>
+                    </div>
+
+                    <!-- Border / axis line width -->
+                    <div class="divider"></div>
+                    <div class="form-group">
+                        <label style="margin-bottom:5px;">Border Width</label>
+                        <div class="offset-row">
+                            <button class="nudge-btn" onclick="nudgeBorderWidth(-0.5)" title="Thinner">−</button>
+                            <span class="offset-display" id="borderWidthVal">2</span>
+                            <button class="nudge-btn" onclick="nudgeBorderWidth(0.5)" title="Thicker">+</button>
+                            <input type="hidden" id="borderWidth" value="2">
+                            <span style="font-size:10px;color:var(--text-faint);margin-left:4px;">px</span>
                         </div>
                     </div>
 
@@ -632,7 +1005,7 @@
 
                         <!-- Freq label offset (positive = up) -->
                         <div class="offset-row">
-                            <span class="offset-row-label">Freq label</span>
+                            <span class="offset-row-label" id="freqOffsetRowLabel">Freq label</span>
                             <button class="nudge-btn" onclick="nudgeOffset('freqOffset',-1)" title="Move down">↓</button>
                             <span class="offset-display" id="freqOffsetVal">0%</span>
                             <button class="nudge-btn" onclick="nudgeOffset('freqOffset', 1)" title="Move up">↑</button>
@@ -661,6 +1034,24 @@
                             <input type="number" id="yMax" value="60">
                         </div>
                     </div>
+
+                    <!-- Custom Y-axis divisions (e.g. 0-100 split into 4/5/6 intervals) -->
+                    <div class="divider"></div>
+                    <div class="form-group">
+                        <label style="margin-bottom:6px;">Y-Axis Divisions</label>
+                        <label class="toggle-label" style="margin-bottom:8px;">
+                            <input type="checkbox" id="enableYDivisions" onchange="toggleYDivisionsInput()">
+                            Set custom number of tick divisions
+                        </label>
+                        <div class="two-col">
+                            <div class="form-group">
+                                <label>Divisions</label>
+                                <input type="number" id="yDivisions" value="5" min="1" max="50" step="1" disabled onchange="updatePlot()">
+                            </div>
+                        </div>
+                        <p style="font-size:10px;color:var(--text-faint);margin-top:2px;">Splits the Y range (Min to Max) into N equal intervals (e.g. 0–100 with 5 → 0, 20, 40, 60, 80, 100)</p>
+                    </div>
+
                     <button class="btn-ghost" onclick="updatePlot()">Update Plot</button>
                 </div>
             </div>
@@ -676,7 +1067,7 @@
                         <button class="btn-ghost" onclick="exportFormat('png')">PNG</button>
                         <button class="btn-ghost" onclick="exportFormat('jpg')">JPG</button>
                         <button class="btn-ghost" onclick="exportFormat('svg')">SVG</button>
-                        <button class="btn-ghost" onclick="exportFormat('pdf')">PDF</button>
+                        <button class="btn-ghost" onclick="exportPDF()">PDF</button>
                     </div>
                     <p style="font-size:10px;color:var(--text-faint);text-align:center;">All processing happens locally — no uploads</p>
                 </div>
@@ -700,6 +1091,29 @@
                 <div id="plotDiv"></div>
             </div>
 
+            <!-- Export bar — shown after plot is generated -->
+            <div class="plot-export-bar hidden" id="plotExportBar">
+                <span class="plot-export-label">Export Plot</span>
+                <div class="plot-export-btns">
+                    <button class="btn-export-bar" onclick="exportFormat('png')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PNG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('jpg')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        JPG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('svg')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        SVG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportPDF()">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PDF
+                    </button>
+                </div>
+            </div>
+
             <!-- Summary -->
             <div class="summary-wrap hidden" id="summarySection">
                 <div class="summary-header">
@@ -716,28 +1130,6 @@
                     </div>
                 </div>
                 <div id="summaryTable"></div>
-                <!-- Plot export buttons below the table -->
-                <div class="table-export-footer">
-                    <span class="table-export-label">Export Plot</span>
-                    <div class="table-export-btns">
-                        <button class="btn-table-action" onclick="exportFormat('png')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            PNG
-                        </button>
-                        <button class="btn-table-action" onclick="exportFormat('jpg')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            JPG
-                        </button>
-                        <button class="btn-table-action" onclick="exportFormat('svg')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            SVG
-                        </button>
-                        <button class="btn-table-action" onclick="exportFormat('pdf')">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            PDF
-                        </button>
-                    </div>
-                </div>
             </div>
 
         </div><!-- /right-col -->
@@ -754,49 +1146,342 @@
 /* ─── State ─────────────────────────────────────────────────── */
 let fileData  = [];
 let plotData  = [];
+let fileSlots = [];
 
-const DEFAULT_COLORS = ['#CC4400','#003399','#8B0000','#4B0082','#004d00'];
+const DEFAULT_FILE_COUNT = 5;
+const MAX_FILES = 50;
+
+const DEFAULT_COLORS = [
+    '#CC4400', // 1: Rust/Red-Orange
+    '#003399', // 2: Deep Blue
+    '#007A33', // 3: Dark Green
+    '#8B0000', // 4: Crimson Red
+    '#4B0082', // 5: Indigo/Purple
+    '#D97706', // 6: Amber/Orange
+    '#0D9488', // 7: Teal
+    '#7C3AED', // 8: Royal Purple
+    '#B45309', // 9: Warm Brown
+    '#2563EB', // 10: Bright Blue
+    '#DB2777', // 11: Magenta/Rose
+    '#374151', // 12: Charcoal Slate
+    '#0284C7', // 13: Cerulean Blue
+    '#65A30D'  // 14: Olive Lime
+];
+
+const LABEL_PRESETS = {
+    frequency: {
+        name: 'Frequency',
+        headerName: 'Frequency',
+        inputLabel: 'Frequency Labels (comma-separated, blank = hide)',
+        defaultValues: '1 Hz, 3 Hz, 5 Hz, 7 Hz, 9 Hz, 11 Hz, 13 Hz, 15 Hz, 17 Hz, 19 Hz, 21 Hz, 23 Hz, 25 Hz, 27 Hz',
+        title1: 'Frequency dependent Induced Output voltage of solution casted',
+        boldLabel: 'Freq Label',
+        offsetLabel: 'Freq label',
+        spacingDesc: 'Adds a time gap between consecutive frequency traces (e.g. between 1 Hz and 3 Hz)',
+        legendDefault: [
+            { color: '#CC4400', text: '1 Hz', dash: 'solid' },
+            { color: '#003399', text: '3 Hz', dash: 'solid' }
+        ]
+    },
+    concentration: {
+        name: 'Concentration',
+        headerName: 'Concentration',
+        inputLabel: 'Concentration Labels (comma-separated, blank = hide)',
+        defaultValues: '0 wt%, 0.25 wt%, 0.5 wt%, 0.75 wt%, 1 wt%, 1.25 wt%, 1.5 wt%, 1.75 wt%, 2 wt%, 2.25 wt%, 2.5 wt%, 3 wt%, 3.5 wt%, 4 wt%',
+        title1: 'Concentration dependent Induced Output voltage of solution casted',
+        boldLabel: 'Concentration Label',
+        offsetLabel: 'Concentration label',
+        spacingDesc: 'Adds a time gap between consecutive concentration traces (e.g. between 0 wt% and 0.25 wt%)',
+        legendDefault: [
+            { color: '#CC4400', text: '0 wt%', dash: 'solid' },
+            { color: '#003399', text: '0.25 wt%', dash: 'solid' }
+        ]
+    },
+    resistor: {
+        name: 'Resistor',
+        headerName: 'Resistor (Ω)',
+        inputLabel: 'Resistor Labels (comma-separated, blank = hide)',
+        defaultValues: '100 Ω, 1 kΩ, 10 kΩ, 100 kΩ, 500 kΩ, 1 MΩ, 2.2 MΩ, 3.3 MΩ, 4.7 MΩ, 8.2 MΩ, 10 MΩ, 20 MΩ, 50 MΩ, 100 MΩ',
+        title1: 'Load Resistance dependent Induced Output voltage of solution casted',
+        boldLabel: 'Resistor Label',
+        offsetLabel: 'Resistor label',
+        spacingDesc: 'Adds a time gap between consecutive resistor traces (e.g. between 100 Ω and 1 kΩ)',
+        legendDefault: [
+            { color: '#CC4400', text: '100 Ω', dash: 'solid' },
+            { color: '#003399', text: '1 kΩ', dash: 'solid' }
+        ]
+    },
+    custom: {
+        name: 'Custom',
+        headerName: 'Parameter',
+        inputLabel: 'Series Labels (comma-separated, blank = hide)',
+        defaultValues: 'Trace 1, Trace 2, Trace 3, Trace 4, Trace 5, Trace 6, Trace 7, Trace 8, Trace 9, Trace 10, Trace 11, Trace 12, Trace 13, Trace 14',
+        title1: 'Induced Output voltage of solution casted',
+        boldLabel: 'Series Label',
+        offsetLabel: 'Series label',
+        spacingDesc: 'Adds a time gap between consecutive parameter traces',
+        legendDefault: [
+            { color: '#CC4400', text: 'Trace 1', dash: 'solid' },
+            { color: '#003399', text: 'Trace 2', dash: 'solid' }
+        ]
+    }
+};
+
+/* Legend items: each { color, text, dash } */
+let legendItems = [
+    { color: '#CC4400', text: '1 Hz', dash: 'solid' },
+    { color: '#003399', text: '3 Hz', dash: 'solid' }
+];
+
+const DASH_OPTIONS = [
+    { value: 'solid',    label: 'Solid' },
+    { value: 'dash',     label: 'Dash' },
+    { value: 'dot',      label: 'Dot' },
+    { value: 'dashdot',  label: 'Dash-Dot' },
+    { value: 'longdash', label: 'Long Dash' },
+    { value: 'none',     label: 'None' }
+];
+
+function getLabelHeaderName() {
+    const sel = document.getElementById('labelTypeSelect');
+    const type = sel ? sel.value : 'frequency';
+    const preset = LABEL_PRESETS[type];
+    return (preset && preset.headerName) ? preset.headerName : 'Frequency';
+}
+
+function onLabelTypeChange(newType) {
+    const preset = LABEL_PRESETS[newType] || LABEL_PRESETS.frequency;
+
+    // Update Title Line 1 if it matches any preset title or standard template
+    const t1El = document.getElementById('titleLine1');
+    if (t1El) {
+        const curr = t1El.value.trim();
+        const matchesAny = Object.values(LABEL_PRESETS).some(p => p.title1 === curr);
+        if (matchesAny || curr.includes('dependent Induced Output voltage of solution casted') || curr === '') {
+            t1El.value = preset.title1;
+        }
+    }
+
+    // Update label text and input value
+    const lblEl = document.getElementById('freqInputLabel');
+    if (lblEl) lblEl.textContent = preset.inputLabel;
+
+    const inp = document.getElementById('freqInput');
+    if (inp) inp.value = preset.defaultValues;
+
+    // Update bold toggle label and offset label
+    const boldTxt = document.getElementById('boldFreqText');
+    if (boldTxt) boldTxt.textContent = preset.boldLabel;
+
+    const offsetTxt = document.getElementById('freqOffsetRowLabel');
+    if (offsetTxt) offsetTxt.textContent = preset.offsetLabel;
+
+    // Update trace spacing description
+    const spacingDesc = document.getElementById('traceSpacingDesc');
+    if (spacingDesc) spacingDesc.textContent = preset.spacingDesc;
+
+    // Show/hide resistor banner
+    const banner = document.getElementById('resistorBanner');
+    if (banner) banner.style.display = newType === 'resistor' ? 'block' : 'none';
+
+    // Update default legend items if not customized
+    const isDefaultLegend = legendItems.length === 2 && Object.values(LABEL_PRESETS).some(p =>
+        p.legendDefault[0].text === legendItems[0]?.text && p.legendDefault[1].text === legendItems[1]?.text
+    );
+    if (isDefaultLegend || legendItems.length === 0) {
+        legendItems = JSON.parse(JSON.stringify(preset.legendDefault));
+        renderLegendItems();
+    }
+
+    syncColorLabels();
+    if (fileData.length > 0) updatePlot();
+}
+
+function resetLabelsToPreset() {
+    const sel = document.getElementById('labelTypeSelect');
+    const type = sel ? sel.value : 'frequency';
+    const preset = LABEL_PRESETS[type] || LABEL_PRESETS.frequency;
+    document.getElementById('freqInput').value = preset.defaultValues;
+    syncColorLabels();
+    if (fileData.length > 0) updatePlot();
+}
 
 /* ─── Panel toggle ──────────────────────────────────────────── */
 function togglePanel(id) {
     document.getElementById(id).classList.toggle('collapsed');
 }
 
-/* ─── Init ──────────────────────────────────────────────────── */
-function initFileInputs() {
+/* ─── Init & File Slots Management ──────────────────────────── */
+function initFileInputs(count = DEFAULT_FILE_COUNT) {
     const container = document.getElementById('fileInputs');
-    for (let i = 0; i < 5; i++) {
-        const row   = document.createElement('div');
-        row.className = 'file-input-row';
-        const lbl   = document.createElement('label');
-        lbl.textContent = `File ${i + 1}`;
-        const inp   = document.createElement('input');
-        inp.type    = 'file';
-        inp.accept  = '.csv';
-        inp.id      = `file${i}`;
-        row.appendChild(lbl);
-        row.appendChild(inp);
-        container.appendChild(row);
+    container.innerHTML = '';
+    fileSlots = [];
+    for (let i = 0; i < count; i++) {
+        addFileInputSlot();
     }
 }
 
-function initColorPickers() {
-    const grid   = document.getElementById('colorGrid');
-    const labels = ['1 Hz','3 Hz','5 Hz','7 Hz','9 Hz'];
+function addFileInputSlot() {
+    const container = document.getElementById('fileInputs');
+    const idx = fileSlots.length;
+
+    const row = document.createElement('div');
+    row.className = 'file-input-row';
+    row.id = `fileRow_${idx}`;
+
+    const lbl = document.createElement('label');
+    lbl.className = 'row-label';
+    lbl.textContent = `File ${idx + 1}`;
+    lbl.style.minWidth = '44px';
+
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.csv';
+    inp.id = `file${idx}`;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'row-remove-btn';
+    removeBtn.innerHTML = '&times;';
+    removeBtn.title = 'Remove slot';
+    removeBtn.onclick = () => removeFileInputSlot(idx);
+
+    row.appendChild(lbl);
+    row.appendChild(inp);
+    row.appendChild(removeBtn);
+
+    container.appendChild(row);
+    fileSlots.push({ row, inp, fileObj: null });
+
+    syncColorPickers();
+}
+
+function removeFileInputSlot(idx) {
+    if (fileSlots.length <= 1) {
+        if (fileSlots[0] && fileSlots[0].inp) fileSlots[0].inp.value = '';
+        if (fileSlots[0]) fileSlots[0].fileObj = null;
+        fileData = [];
+        return;
+    }
+
+    const rowEl = document.getElementById(`fileRow_${idx}`);
+    if (rowEl) rowEl.remove();
+
+    // Re-index remaining rows
+    const container = document.getElementById('fileInputs');
+    const rows = Array.from(container.children);
+    fileSlots = [];
+    rows.forEach((r, i) => {
+        r.id = `fileRow_${i}`;
+        const lbl = r.querySelector('label');
+        if (lbl) lbl.textContent = `File ${i + 1}`;
+        const inp = r.querySelector('input[type="file"]');
+        if (inp) inp.id = `file${i}`;
+        const btn = r.querySelector('.row-remove-btn');
+        if (btn) btn.onclick = () => removeFileInputSlot(i);
+        fileSlots.push({ row: r, inp, fileObj: (inp && inp.files && inp.files[0]) || null });
+    });
+
+    syncColorPickers();
+
+    // If active plot data exists, remove data for the deleted slot & re-index
+    if (fileData.length > 0) {
+        fileData = fileData.filter(f => f.index !== idx).map(f => {
+            if (f.index > idx) {
+                return { ...f, index: f.index - 1 };
+            }
+            return f;
+        });
+        if (fileData.length > 0) {
+            updatePlot();
+        }
+    }
+}
+
+function handleBatchFiles(fileList) {
+    if (!fileList || fileList.length === 0) return;
+
+    const sorted = Array.from(fileList).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    // Expand slots if needed so all selected files fit
+    while (fileSlots.length < sorted.length) {
+        addFileInputSlot();
+    }
+
+    const count = sorted.length;
+    for (let i = 0; i < count; i++) {
+        const slot = fileSlots[i];
+        if (slot && slot.inp) {
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(sorted[i]);
+                slot.inp.files = dt.files;
+            } catch (err) {
+                slot.fileObj = sorted[i];
+            }
+        }
+    }
+    setStatus(`Assigned ${count} file${count > 1 ? 's' : ''} (File 1 to File ${count}). Click "Generate Plot".`, 'success');
+}
+
+function clearAllFiles() {
+    fileSlots.forEach(slot => {
+        if (slot.inp) slot.inp.value = '';
+        slot.fileObj = null;
+    });
+    const batchInp = document.getElementById('batchFileInput');
+    if (batchInp) batchInp.value = '';
+    fileData = [];
+    plotData = [];
+    setStatus('All file selections cleared');
+    const dbg = document.getElementById('debugInfo');
+    if (dbg) {
+        dbg.classList.add('hidden');
+        dbg.innerHTML = '';
+    }
+}
+
+function syncColorPickers() {
+    const grid = document.getElementById('colorGrid');
+    if (!grid) return;
+    const count = fileSlots.length;
+    const rawVal = document.getElementById('freqInput') ? document.getElementById('freqInput').value : '';
+    const labels = rawVal ? rawVal.split(',').map(s => s.trim()) : [];
+
+    // Save existing user color selections
+    const savedColors = [];
+    for (let i = 0; i < 50; i++) {
+        const el = document.getElementById(`color${i}`);
+        if (el) savedColors[i] = el.value;
+    }
+
     grid.innerHTML = '';
-    for (let i = 0; i < 5; i++) {
-        const item  = document.createElement('div');
+    for (let i = 0; i < count; i++) {
+        const item = document.createElement('div');
         item.className = 'color-picker-item';
-        const lbl   = document.createElement('label');
-        lbl.textContent = labels[i];
-        const inp   = document.createElement('input');
-        inp.type    = 'color';
-        inp.id      = `color${i}`;
-        inp.value   = DEFAULT_COLORS[i];
+        const lbl = document.createElement('label');
+        lbl.id = `colorLabel${i}`;
+        const txt = labels[i] || `File ${i + 1}`;
+        lbl.textContent = txt;
+        lbl.title = txt;
+        lbl.style.cssText = 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;font-size:10px;text-align:center;';
+
+        const inp = document.createElement('input');
+        inp.type = 'color';
+        inp.id = `color${i}`;
+        inp.value = savedColors[i] || DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+        inp.onchange = () => updatePlot();
+
         item.appendChild(lbl);
         item.appendChild(inp);
         grid.appendChild(item);
     }
+}
+
+function initColorPickers() {
+    syncColorPickers();
 }
 
 /* ─── Helpers ────────────────────────────────────────────────── */
@@ -859,9 +1544,12 @@ function processFiles() {
     fileData = [];
     const msgs = [];
     let total = 0, done = 0;
+    const count = fileSlots.length;
 
-    for (let i = 0; i < 5; i++) {
-        if (document.getElementById(`file${i}`).files[0]) total++;
+    for (let i = 0; i < count; i++) {
+        const slot = fileSlots[i];
+        const file = (slot && slot.inp && slot.inp.files && slot.inp.files[0]) || (slot && slot.fileObj);
+        if (file) total++;
     }
 
     if (total === 0) {
@@ -870,18 +1558,20 @@ function processFiles() {
     }
     setStatus('Processing…');
 
-    for (let i = 0; i < 5; i++) {
-        const file = document.getElementById(`file${i}`).files[0];
+    for (let i = 0; i < count; i++) {
+        const slot = fileSlots[i];
+        const file = (slot && slot.inp && slot.inp.files && slot.inp.files[0]) || (slot && slot.fileObj);
         if (!file) continue;
 
+        const slotIndex = i;
         const reader = new FileReader();
         reader.onload = e => {
             const parsed = parseCSVData(e.target.result);
             if (parsed.length === 0) {
-                msgs.push(`✗ ${file.name}: no valid data`);
+                msgs.push(`✗ File ${slotIndex + 1} (${file.name}): no valid data`);
             } else {
-                fileData.push({ index: i, name: file.name, data: parsed });
-                msgs.push(`✓ ${file.name}: ${parsed.length} rows`);
+                fileData.push({ index: slotIndex, name: file.name, data: parsed });
+                msgs.push(`✓ File ${slotIndex + 1} (${file.name}): ${parsed.length} rows`);
             }
             done++;
             showDebug(msgs);
@@ -914,10 +1604,11 @@ function showDebug(msgs) {
 function generateInitialPlot() {
     document.getElementById('plotPlaceholder').classList.add('hidden');
     document.getElementById('plotContainer').classList.remove('hidden');
+    document.getElementById('plotExportBar').classList.remove('hidden');
     document.getElementById('summarySection').classList.remove('hidden');
 
     // Expand the relevant panels
-    ['customSection','colorSection','scaleSection','exportSection'].forEach(id => {
+    ['customSection','colorSection','legendSection','scaleSection','exportSection'].forEach(id => {
         document.getElementById(id).classList.remove('collapsed');
     });
 
@@ -933,16 +1624,22 @@ function generateInitialPlot() {
         document.getElementById('yMax').value = Math.ceil(allMax + pad);
     }
 
-    // Sync color picker labels with freq labels
+    // Sync color picker labels with series labels
     syncColorLabels();
     updatePlot();
 }
 
 function syncColorLabels() {
-    const labels = document.getElementById('freqInput').value.split(',').map(s => s.trim());
-    for (let i = 0; i < 5; i++) {
-        const lbl = document.querySelector(`#colorGrid .color-picker-item:nth-child(${i+1}) label`);
-        if (lbl && labels[i]) lbl.textContent = labels[i];
+    const rawVal = document.getElementById('freqInput').value;
+    const labels = rawVal.split(',').map(s => s.trim());
+    const count = fileSlots.length;
+    for (let i = 0; i < count; i++) {
+        const lbl = document.getElementById(`colorLabel${i}`);
+        if (lbl) {
+            const txt = labels[i] || `File ${i + 1}`;
+            lbl.textContent = txt;
+            lbl.title = txt;
+        }
     }
 }
 
@@ -956,8 +1653,17 @@ function nudgeTitleY(delta) {
     updatePlot();
 }
 
-/* ─── Nudge annotation offset (separate for freq/vpp) ──────── */
-function nudgeOffset(id, delta) {
+/* ─── Nudge border width ─────────────────────────────────────── */
+function nudgeBorderWidth(delta) {
+    const el  = document.getElementById('borderWidth');
+    const lbl = document.getElementById('borderWidthVal');
+    const v   = Math.min(8, Math.max(0.5, parseFloat(el.value) + delta));
+    el.value  = v;
+    lbl.textContent = v % 1 === 0 ? v : v.toFixed(1);
+    updatePlot();
+}
+
+/* ─── Nudge annotation offset (separate for freq/vpp) ──────── */function nudgeOffset(id, delta) {
     const el  = document.getElementById(id);
     const lbl = document.getElementById(id + 'Val');
     const v   = Math.min(30, Math.max(-30, parseInt(el.value) + delta));
@@ -966,9 +1672,169 @@ function nudgeOffset(id, delta) {
     updatePlot();
 }
 
+/* ─── Toggle trace spacing input ───────────────────────────── */
+function toggleSpacingInput() {
+    const enabled = document.getElementById('enableSpacing').checked;
+    document.getElementById('traceSpacing').disabled = !enabled;
+    updatePlot();
+}
+
+/* ─── Toggle Y-axis divisions input ────────────────────────── */
+function toggleYDivisionsInput() {
+    const enabled = document.getElementById('enableYDivisions').checked;
+    document.getElementById('yDivisions').disabled = !enabled;
+    updatePlot();
+}
+
+/* ─── Legend management ─────────────────────────────────────── */
+function renderLegendItems() {
+    const list = document.getElementById('legendItemsList');
+    list.innerHTML = '';
+    legendItems.forEach((item, idx) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:6px;';
+
+        const colorInp = document.createElement('input');
+        colorInp.type  = 'color';
+        colorInp.value = item.color;
+        colorInp.style.cssText = 'width:34px;height:30px;flex-shrink:0;border:1px solid var(--border2);border-radius:4px;background:none;padding:2px;';
+        colorInp.onchange = () => { legendItems[idx].color = colorInp.value; updatePlot(); };
+
+        const textInp = document.createElement('input');
+        textInp.type  = 'text';
+        textInp.value = item.text;
+        textInp.placeholder = 'Label…';
+        textInp.style.flex = '1';
+        textInp.onchange = () => { legendItems[idx].text = textInp.value; updatePlot(); };
+        textInp.oninput  = () => { legendItems[idx].text = textInp.value; updatePlot(); };
+
+        const dashSel = document.createElement('select');
+        dashSel.style.cssText = 'width:95px;flex-shrink:0;';
+        DASH_OPTIONS.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.value; opt.textContent = d.label;
+            if (d.value === item.dash) opt.selected = true;
+            dashSel.appendChild(opt);
+        });
+        dashSel.onchange = () => { legendItems[idx].dash = dashSel.value; updatePlot(); };
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'nudge-btn';
+        delBtn.innerHTML = '&times;';
+        delBtn.title = 'Remove';
+        delBtn.style.cssText = 'width:28px;padding:4px 0;';
+        delBtn.onclick = () => { legendItems.splice(idx, 1); renderLegendItems(); updatePlot(); };
+
+        row.appendChild(colorInp);
+        row.appendChild(textInp);
+        row.appendChild(dashSel);
+        row.appendChild(delBtn);
+        list.appendChild(row);
+    });
+}
+
+function addLegendItem() {
+    legendItems.push({ color: '#888888', text: `Item ${legendItems.length + 1}`, dash: 'solid' });
+    renderLegendItems();
+    updatePlot();
+}
+
+function toggleLegend() {
+    const enabled = document.getElementById('enableLegend').checked;
+    document.getElementById('legendOptions').style.display = enabled ? 'flex' : 'none';
+    updatePlot();
+}
+
 /* ─── Update / render plot ──────────────────────────────────── */
 
-/* Shared layout builder — call with 'dark' for preview, 'light' for export */
+/* Rebuild plotData from current fileData + UI settings.
+   Called by both updatePlot (preview) and exportFormat (export). */
+function rebuildPlotData() {
+    plotData = [];
+
+    const slotCount = Math.max(fileSlots.length, fileData.length, 1);
+    const colors = Array.from({length: slotCount}, (_, i) => {
+        const el = document.getElementById(`color${i}`);
+        return el ? el.value : DEFAULT_COLORS[i % DEFAULT_COLORS.length];
+    });
+    const rawFreqVal = (document.getElementById('freqInput').value || '').trim();
+    const freqLabels = rawFreqVal ? rawFreqVal.split(',').map(s => s.trim()) : [];
+    const lineWidth  = parseFloat(document.getElementById('lineWidth').value);
+    const enableSpacing = document.getElementById('enableSpacing').checked;
+    const spacingValue  = parseFloat(document.getElementById('traceSpacing').value) || 0;
+
+    let summaryRows = '';
+    let tOffset     = 0;
+
+    fileData.sort((a, b) => a.index - b.index).forEach((file, idx) => {
+        const data = file.data;
+        if (data.length < 2) return;
+
+        const timeCol    = data.map(r => r[0]);
+        const voltageCol = data.map(r => r[1]);
+
+        const vMax    = arrMax(voltageCol);
+        const vMin    = arrMin(voltageCol);
+        const vppFull = vMax - vMin;
+
+        const half = Math.floor(data.length / 2);
+        const { t: tDs, v: vDs } = downsample(timeCol.slice(0, half), voltageCol.slice(0, half), 3000);
+
+        const tBase  = arrMin(tDs);
+        const tZero  = tDs.map(t => t - tBase);
+        const dt     = tZero.length > 1 ? tZero[1] - tZero[0] : 0;
+        const tFinal = tZero.map(t => t + tOffset);
+
+        const traceName = freqLabels[file.index] || freqLabels[idx] || (file.name || `File ${file.index + 1}`);
+        const traceColor = colors[file.index] || colors[idx] || DEFAULT_COLORS[file.index % DEFAULT_COLORS.length];
+
+        plotData.push({
+            x: tFinal, y: vDs,
+            type: 'scatter', mode: 'lines',
+            name: traceName,
+            line: { color: traceColor, width: lineWidth },
+            hovertemplate: '<b>%{fullData.name}</b><br>t = %{x:.3f} s<br>V = %{y:.2f} V<extra></extra>',
+            showlegend: false,
+            _vpp: vppFull,
+            _fileIndex: file.index
+        });
+
+        summaryRows += `<tr>
+            <td>${traceName}</td>
+            <td>${vppFull.toFixed(2)} V</td>
+        </tr>`;
+
+        tOffset = tFinal[tFinal.length - 1] + (enableSpacing ? spacingValue : dt);
+    });
+
+    /* Add legend-only dummy traces (invisible lines that appear in the legend) */
+    if (document.getElementById('enableLegend').checked) {
+        const removeAllDashes = document.getElementById('legendRemoveDash') ? document.getElementById('legendRemoveDash').checked : false;
+        const legendDashWVal  = parseFloat(document.getElementById('legendDashWidth').value);
+        const legendDashW     = isNaN(legendDashWVal) ? 2.5 : Math.max(0, legendDashWVal);
+
+        legendItems.forEach(item => {
+            const itemText = (item.text || '').trim();
+            if (!itemText) return; // Do not add blank legend items
+
+            const noDash = removeAllDashes || item.dash === 'none' || legendDashW === 0;
+
+            plotData.push({
+                x: [0, 0], y: [0, 0],
+                type: 'scatter',
+                mode: noDash ? 'none' : 'lines',
+                name: itemText,
+                ...(noDash ? {} : {
+                    line: { color: item.color, dash: item.dash, width: legendDashW }
+                }),
+                showlegend: true,
+                hoverinfo: 'skip'
+            });
+        });
+    }
+
+    return summaryRows;
+}
 function buildPlotLayout(theme) {
     const tc = theme === 'light' ? '#000000' : '#e8e8e8';  // text colour
     const lc = theme === 'light' ? '#000000' : '#888888';  // line/axis colour
@@ -981,26 +1847,65 @@ function buildPlotLayout(theme) {
     const boldFreq    = document.getElementById('boldFreq').checked;
     const yMinVal     = parseFloat(document.getElementById('yMin').value);
     const yMaxVal     = parseFloat(document.getElementById('yMax').value);
+    const enableYDivs = document.getElementById('enableYDivisions').checked;
+    const yDivCount   = Math.max(1, parseInt(document.getElementById('yDivisions').value) || 1);
     const annotSize   = parseInt(document.getElementById('annotSize').value);
     const titleSize   = parseInt(document.getElementById('titleSize').value);
     const axisSize    = parseInt(document.getElementById('axisSize').value);
     const freqOffset  = parseInt(document.getElementById('freqOffset').value) / 100;
     const vppOffset   = parseInt(document.getElementById('vppOffset').value)  / 100;
     const titleYOffset= parseInt(document.getElementById('titleYOffset').value);
-    const freqLabels  = document.getElementById('freqInput').value.split(',').map(s => s.trim());
-
+    const borderWidth = parseFloat(document.getElementById('borderWidth').value);
     const titleWeight = boldTitle ? 'bold' : 'normal';
     const scaleWeight = boldScale ? 'bold' : 'normal';
-    const titleLines  = [document.getElementById('titleLine1').value,
-                         document.getElementById('titleLine2').value].filter(Boolean).length;
-    const topMargin   = Math.round(titleLines * titleSize * 1.6 + 18 + Math.max(0, -titleYOffset));
-    const titleText   = [document.getElementById('titleLine1').value,
-                         document.getElementById('titleLine2').value].filter(Boolean).join('<br>');
+
+    const t1 = (document.getElementById('titleLine1').value || '').trim();
+    const t2 = (document.getElementById('titleLine2').value || '').trim();
+    const titleParts  = [t1, t2].filter(Boolean);
+    const hasTitle    = titleParts.length > 0;
+    const titleText   = titleParts.join('<br>');
+    const topMargin   = hasTitle
+        ? Math.round(titleParts.length * titleSize * 1.6 + 18 + Math.max(0, -titleYOffset))
+        : 25;
+
+    const rawFreqVal  = (document.getElementById('freqInput').value || '').trim();
+    const freqLabels  = rawFreqVal ? rawFreqVal.split(',').map(s => s.trim()) : [];
+
+    const vppFormatInp= document.getElementById('vppAnnotationFormat');
+    const vppFormat   = vppFormatInp ? vppFormatInp.value.trim() : 'Vpp = {v} V';
+
+    const xLabelRaw   = (document.getElementById('xLabel').value || '').trim();
+    const yLabelRaw   = (document.getElementById('yLabel').value || '').trim();
+
+    const xTitleConfig = xLabelRaw ? {
+        text: boldScale ? `<b>${xLabelRaw}</b>` : xLabelRaw,
+        font: { size: axisSize, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
+        standoff: 10
+    } : undefined;
+
+    const yTitleConfig = yLabelRaw ? {
+        text: boldScale ? `<b>${yLabelRaw}</b>` : yLabelRaw,
+        font: { size: axisSize, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
+        standoff: 10
+    } : undefined;
+
     const yRange      = yMaxVal - yMinVal;
     const spacing     = yRange * 0.10;
 
+    /* Legend options */
+    const enableLegend    = document.getElementById('enableLegend').checked;
+    const legendPos       = document.getElementById('legendPosition').value;
+    const legendFontSize  = parseInt(document.getElementById('legendFontSize').value) || 13;
+    const legendBox       = document.getElementById('legendBox').checked;
+    const legendBorderCol = document.getElementById('legendBorderColor').value;
+    const legendBorderW   = parseFloat(document.getElementById('legendBorderWidth').value) || 0;
+    const legendDashed    = document.getElementById('legendDashed').checked;
+    const legendBoxW      = (parseFloat(document.getElementById('legendBoxWidth').value)  || 22) / 100;
+    const legendBoxHIn    = parseFloat(document.getElementById('legendBoxHeight').value) || 0;
+    const legendDashLen   = Math.max(30, parseFloat(document.getElementById('legendDashLength').value) || 30);
     const annotations = [];
     plotData.forEach((trace, idx) => {
+        if (trace._vpp === undefined) return;
         if (!trace.x || trace.x.length === 0) return;
         const xMin = arrMin(trace.x), xMax = arrMax(trace.x);
         const xMid = xMin + (xMax - xMin) / 2;
@@ -1008,126 +1913,233 @@ function buildPlotLayout(theme) {
         const freqShift = yRange * freqOffset;
         const vppShift  = yRange * vppOffset;
 
-        annotations.push({
-            x: xMid, y: yHi + spacing + freqShift,
-            text: freqLabels[idx] || `${idx + 1} Hz`,
-            showarrow: false,
-            font: { size: annotSize, family: 'Times New Roman, serif', color: tc,
-                    weight: (boldAnnot || boldFreq) ? 'bold' : 'normal' },
-            bgcolor: aBg, borderwidth: 0,
-            xanchor: 'center', yanchor: 'bottom'
-        });
-        annotations.push({
-            x: xMid, y: yLo - spacing + vppShift,
-            text: `Vpp = ${trace._vpp.toFixed(1)} V`,
-            showarrow: false,
-            font: { size: annotSize, family: 'Times New Roman, serif', color: tc,
-                    weight: boldAnnot ? 'bold' : 'normal' },
-            bgcolor: aBg, borderwidth: 0,
-            xanchor: 'center', yanchor: 'top'
-        });
+        // Only add series parameter annotation if provided and not blank
+        const fi = trace._fileIndex !== undefined ? trace._fileIndex : idx;
+        const labelText = freqLabels[fi] || freqLabels[idx] || '';
+        if (labelText.length > 0) {
+            annotations.push({
+                x: xMid, y: yHi + spacing + freqShift,
+                text: (boldAnnot || boldFreq) ? `<b>${labelText}</b>` : labelText,
+                showarrow: false,
+                font: { size: annotSize, family: 'Times New Roman, serif', color: tc },
+                bgcolor: aBg, borderwidth: 0,
+                xanchor: 'center', yanchor: 'bottom'
+            });
+        }
+
+        // Only add Vpp annotation if format string is non-empty
+        if (vppFormat.length > 0) {
+            const vFormatted = vppFormat.replace('{v}', trace._vpp.toFixed(1));
+            annotations.push({
+                x: xMid, y: yLo - spacing + vppShift,
+                text: boldAnnot ? `<b>${vFormatted}</b>` : vFormatted,
+                showarrow: false,
+                font: { size: annotSize, family: 'Times New Roman, serif', color: tc },
+                bgcolor: aBg, borderwidth: 0,
+                xanchor: 'center', yanchor: 'top'
+            });
+        }
     });
 
+    /* ── Legend configuration ──────────────────────────────── */
+    let legendConfig = undefined;
+    let layoutShapes = undefined;
+    const validLegendItems = legendItems.filter(item => item.text && item.text.trim().length > 0);
+
+    if (enableLegend && validLegendItems.length > 0) {
+        const isRight = legendPos === 'top-right';
+        const lx = isRight ? 1 : 0;
+        const lxanchor = isRight ? 'right' : 'left';
+
+        legendConfig = {
+            x: lx, y: 1,
+            xanchor: lxanchor, yanchor: 'top',
+            orientation: 'v',
+            bgcolor: 'rgba(0,0,0,0)',
+            borderwidth: (legendBox && !legendDashed) ? legendBorderW : 0,
+            bordercolor: legendBorderCol,
+            font: { size: legendFontSize, family: 'Times New Roman, serif', color: tc },
+            traceorder: 'normal',
+            itemsizing: 'trace',
+            itemwidth: legendDashLen
+        };
+
+        if (legendBox && legendDashed) {
+            const n = validLegendItems.length || 1;
+            const autoH = Math.min(0.8, 0.05 + n * 0.045);
+            const bh = legendBoxHIn > 0 ? legendBoxHIn / 100 : autoH;
+            const x0 = isRight ? (1 - legendBoxW) : 0;
+            const x1 = isRight ? 1 : legendBoxW;
+            const y0 = 1 - bh;
+            const y1 = 1;
+            layoutShapes = [{
+                type: 'rect',
+                xref: 'paper', yref: 'paper',
+                x0, y0, x1, y1,
+                line: { color: legendBorderCol, width: legendBorderW, dash: 'dash' },
+                fillcolor: 'rgba(0,0,0,0)'
+            }];
+        }
+    }
+
     return {
-        title: {
-            text: (boldTitle ? '<b>' : '') + titleText + (boldTitle ? '</b>' : ''),
-            font: { size: titleSize, family: 'Times New Roman, serif', color: tc, weight: titleWeight },
-            x: 0.5, xanchor: 'center', yanchor: 'top', y: 1,
-            pad: { t: 8 + titleYOffset, b: 0 }
-        },
+        ...(hasTitle ? {
+            title: {
+                text: boldTitle ? `<b>${titleText}</b>` : titleText,
+                font: { size: titleSize, family: 'Times New Roman, serif', color: tc, weight: titleWeight },
+                x: 0.5, xanchor: 'center', yanchor: 'top', y: 1,
+                pad: { t: 8 + titleYOffset, b: 0 }
+            }
+        } : {
+            title: undefined
+        }),
         xaxis: {
-            title: { text: boldScale ? `<b>${document.getElementById('xLabel').value}</b>`
-                                     : document.getElementById('xLabel').value,
-                     font: { size: axisSize, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
-                     standoff: 10 },
+            ...(xTitleConfig ? { title: xTitleConfig } : { title: undefined }),
             showgrid: false, zeroline: false,
-            linewidth: 2, linecolor: lc, mirror: true, showline: true,
+            linewidth: borderWidth, linecolor: lc, mirror: true, showline: true,
             tickfont: { size: 13, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
-            tickwidth: 1.5, ticklen: 5, automargin: true
+            tickwidth: borderWidth, ticklen: 5, automargin: true
         },
         yaxis: {
-            title: { text: boldScale ? `<b>${document.getElementById('yLabel').value}</b>`
-                                     : document.getElementById('yLabel').value,
-                     font: { size: axisSize, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
-                     standoff: 10 },
+            ...(yTitleConfig ? { title: yTitleConfig } : { title: undefined }),
             showgrid: false, zeroline: false,
-            linewidth: 2, linecolor: lc, mirror: true, showline: true,
+            linewidth: borderWidth, linecolor: lc, mirror: true, showline: true,
             tickfont: { size: 13, family: 'Times New Roman, serif', color: tc, weight: scaleWeight },
-            tickwidth: 1.5, ticklen: 5, range: [yMinVal, yMaxVal], automargin: true
+            tickwidth: borderWidth, ticklen: 5, range: [yMinVal, yMaxVal], automargin: true,
+            ...(enableYDivs ? { dtick: (yMaxVal - yMinVal) / yDivCount } : {})
         },
         plot_bgcolor:  bg,
         paper_bgcolor: bg,
-        margin: { l: 80, r: 30, t: topMargin, b: 70, pad: 4 },
+        margin: { l: yTitleConfig ? 80 : 50, r: 30, t: topMargin, b: xTitleConfig ? 70 : 40, pad: 4 },
         annotations,
         height: 540,
-        showlegend: false
+        showlegend: Boolean(enableLegend && validLegendItems.length > 0),
+        ...(legendConfig ? { legend: legendConfig } : {}),
+        ...(layoutShapes ? { shapes: layoutShapes } : {})
     };
+}
+
+function applyLegendPostProcessing(container) {
+    const root = container || document.getElementById('plotDiv');
+    if (!root) return;
+
+    const enableLegendEl = document.getElementById('enableLegend');
+    if (!enableLegendEl || !enableLegendEl.checked) return;
+
+    const legendGroup = root.querySelector('g.legend');
+    if (!legendGroup) return;
+
+    const removeAllDashes = document.getElementById('legendRemoveDash') ? document.getElementById('legendRemoveDash').checked : false;
+    const centerText = document.getElementById('legendCenterText') ? document.getElementById('legendCenterText').checked : false;
+    const legendDashWVal = parseFloat(document.getElementById('legendDashWidth').value);
+    const legendDashW = isNaN(legendDashWVal) ? 2.5 : Math.max(0, legendDashWVal);
+    const legendDashLen = Math.max(30, parseFloat(document.getElementById('legendDashLength').value) || 30);
+    const legendBox = document.getElementById('legendBox') ? document.getElementById('legendBox').checked : false;
+    const legendDashed = document.getElementById('legendDashed') ? document.getElementById('legendDashed').checked : false;
+    const legendBoxW = (parseFloat(document.getElementById('legendBoxWidth').value) || 22) / 100;
+
+    // 1. Dash line thickness & visibility
+    const paths = root.querySelectorAll('.legendlines path');
+    paths.forEach(p => {
+        if (removeAllDashes || legendDashW === 0) {
+            p.style.display = 'none';
+        } else {
+            p.style.display = '';
+            p.style.strokeWidth = `${legendDashW}px`;
+            p.setAttribute('stroke-width', legendDashW);
+        }
+    });
+
+    // 2. Text alignment & centering when dash is removed
+    const traces = legendGroup.querySelectorAll('g.traces');
+    if (traces.length === 0) return;
+
+    const bgRect = legendGroup.querySelector('rect.bg');
+
+    // Calculate center X coordinate if centering
+    let centerX = null;
+    if (centerText) {
+        if (legendBox && legendDashed) {
+            // Box is a dashed shape in .shapelayer
+            const shapeEl = root.querySelector('.shapelayer path, .shapelayer rect');
+            if (shapeEl && shapeEl.getBBox) {
+                const shapeBox = shapeEl.getBBox();
+                const shapeMidX = shapeBox.x + shapeBox.width / 2;
+                const lgM = legendGroup.transform && legendGroup.transform.baseVal.consolidate();
+                const lgX = lgM ? lgM.matrix.e : 0;
+                centerX = shapeMidX - lgX;
+            } else {
+                const plotBg = root.querySelector('.plotbg') || root.querySelector('.nsewdrag');
+                const plotW = plotBg && plotBg.getBBox ? plotBg.getBBox().width : 700;
+                const isRight = document.getElementById('legendPosition').value === 'top-right';
+                const boxPx = legendBoxW * plotW;
+                const bgW = bgRect ? parseFloat(bgRect.getAttribute('width') || 0) : boxPx;
+                centerX = isRight ? (bgW - boxPx / 2) : (boxPx / 2);
+            }
+        } else if (bgRect) {
+            const bgX = parseFloat(bgRect.getAttribute('x') || 0);
+            const bgW = parseFloat(bgRect.getAttribute('width') || 0);
+            centerX = bgX + bgW / 2;
+        } else {
+            let maxW = 40;
+            traces.forEach(tr => {
+                const txt = tr.querySelector('text.legendtext');
+                if (txt) {
+                    const w = txt.getComputedTextLength ? txt.getComputedTextLength() : (txt.getBBox ? txt.getBBox().width : 0);
+                    if (w > maxW) maxW = w;
+                }
+            });
+            centerX = maxW / 2;
+        }
+    }
+
+    traces.forEach(tr => {
+        const txt = tr.querySelector('text.legendtext');
+        if (!txt) return;
+
+        // Check if this trace has dash removed
+        const line = tr.querySelector('.legendlines path');
+        const hasDash = line && line.style.display !== 'none' && !removeAllDashes && legendDashW > 0;
+
+        // Trace horizontal offset
+        const trM = tr.transform && tr.transform.baseVal.consolidate();
+        const trX = trM ? trM.matrix.e : 0;
+
+        if (!hasDash && centerText && centerX !== null) {
+            const targetX = centerX - trX;
+            txt.setAttribute('text-anchor', 'middle');
+            txt.style.textAnchor = 'middle';
+            txt.setAttribute('x', targetX);
+            txt.querySelectorAll('tspan').forEach(ts => ts.setAttribute('x', targetX));
+        } else {
+            txt.setAttribute('text-anchor', 'start');
+            txt.style.textAnchor = 'start';
+            const defaultX = hasDash ? (legendDashLen + 10) : (removeAllDashes ? 10 : (legendDashLen + 10));
+            txt.setAttribute('x', defaultX);
+            txt.querySelectorAll('tspan').forEach(ts => ts.setAttribute('x', defaultX));
+        }
+    });
 }
 
 function updatePlot() {
     if (fileData.length === 0) return;
 
-    plotData = [];
+    const summaryRows = rebuildPlotData();
 
-    const colors      = Array.from({length: 5}, (_, i) => document.getElementById(`color${i}`).value);
-    const freqLabels  = document.getElementById('freqInput').value.split(',').map(s => s.trim());
-    const yMinVal     = parseFloat(document.getElementById('yMin').value);
-    const yMaxVal     = parseFloat(document.getElementById('yMax').value);
-    const lineWidth   = parseFloat(document.getElementById('lineWidth').value);
-
-    let summaryRows = '';
-    let tOffset     = 0;
-
-    fileData.sort((a, b) => a.index - b.index).forEach((file, idx) => {
-        const data    = file.data;
-        if (data.length < 2) return;
-
-        const timeCol    = data.map(r => r[0]);
-        const voltageCol = data.map(r => r[1]);
-
-        const vMax    = arrMax(voltageCol);
-        const vMin    = arrMin(voltageCol);
-        const vppFull = vMax - vMin;
-
-        const half   = Math.floor(data.length / 2);
-        const tRaw   = timeCol.slice(0, half);
-        const vRaw   = voltageCol.slice(0, half);
-
-        const { t: tDs, v: vDs } = downsample(tRaw, vRaw, 3000);
-
-        const tBase  = arrMin(tDs);
-        const tZero  = tDs.map(t => t - tBase);
-        const dt     = tZero.length > 1 ? tZero[1] - tZero[0] : 0;
-        const tFinal = tZero.map(t => t + tOffset);
-
-        plotData.push({
-            x: tFinal, y: vDs,
-            type: 'scatter', mode: 'lines',
-            name: freqLabels[idx] || `File ${idx + 1}`,
-            line: { color: colors[idx], width: lineWidth },
-            hovertemplate: '<b>%{fullData.name}</b><br>t = %{x:.3f} s<br>V = %{y:.2f} V<extra></extra>',
-            showlegend: false,
-            _vpp: vppFull
-        });
-
-        summaryRows += `<tr>
-            <td>${freqLabels[idx] || `File ${idx + 1}`}</td>
-            <td>${vppFull.toFixed(2)} V</td>
-        </tr>`;
-
-        tOffset = tFinal[tFinal.length - 1] + dt;
-    });
-
-    Plotly.newPlot('plotDiv', plotData, buildPlotLayout('dark'), {
+    Plotly.newPlot('plotDiv', plotData, buildPlotLayout('light'), {
         responsive: true,
         displayModeBar: false,
-        staticPlot: false
+        staticPlot: true
+    }).then(() => {
+        applyLegendPostProcessing();
     });
+    applyLegendPostProcessing();
 
     /* Summary table */
+    const headerName = getLabelHeaderName();
     document.getElementById('summaryTable').innerHTML = `
         <table>
-            <thead><tr><th>Frequency</th><th>Vpp</th></tr></thead>
+            <thead><tr><th>${headerName}</th><th>Vpp</th></tr></thead>
             <tbody>${summaryRows}</tbody>
         </table>`;
 }
@@ -1245,47 +2257,234 @@ function downloadTableImage() {
 }
 
 /* ─── Export ─────────────────────────────────────────────────── */
-function exportFormat(fmt) {
-    const name = `TENG_plot_${new Date().toISOString().slice(0,10)}`;
+/* Strategy: grab the SVG Plotly already rendered into the preview div,
+   patch it for light mode (bg white, text/lines black), then export.
+   This guarantees every font size, annotation, label from the current
+   render is preserved exactly — no second Plotly render needed.        */
 
-    // Create a hidden off-screen div, render a fresh light-mode plot into it,
-    // capture the image, then destroy it — the live dark preview is never touched.
-    const ghost = document.createElement('div');
-    ghost.id = 'exportGhost';
-    ghost.style.cssText = 'position:fixed;left:-9999px;top:0;width:1600px;height:700px;background:#ffffff;';
-    document.body.appendChild(ghost);
+function getExportSVG() {
+    // Plotly renders multiple stacked SVGs inside .svg-container.
+    // We need ALL of them composited into one to get title, labels, annotations.
+    const container = document.querySelector('#plotDiv .svg-container');
+    if (!container) return null;
 
-    const lightLayout = buildPlotLayout('light');
-    lightLayout.height = 700;
-    lightLayout.width  = 1600;
+    const allSvgs = Array.from(container.querySelectorAll('svg'));
+    if (allSvgs.length === 0) return null;
 
-    Plotly.newPlot('exportGhost', plotData, lightLayout, {
-        staticPlot: true, displayModeBar: false
-    }).then(() => {
-        const imgFmt = fmt === 'jpg' ? 'jpeg' : fmt === 'pdf' ? 'png' : fmt;
-        return Plotly.toImage('exportGhost', { format: imgFmt, width: 1600, height: 700 });
-    }).then(dataUrl => {
-        document.body.removeChild(ghost);
-        if (fmt === 'pdf') {
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            pdf.addImage(dataUrl, 'PNG', 10, 10, 280, 155);
-            pdf.save(name + '.pdf');
-        } else {
-            const link = document.createElement('a');
-            link.download = name + '.' + (fmt === 'jpg' ? 'jpg' : fmt);
-            link.href = dataUrl;
-            link.click();
+    // Use the first SVG's viewBox/dimensions as the canvas
+    const base   = allSvgs[0];
+    const W      = parseFloat(base.getAttribute('width')  || base.style.width  || 800);
+    const H      = parseFloat(base.getAttribute('height') || base.style.height || 540);
+
+    // Create a fresh SVG to hold everything
+    const out = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    out.setAttribute('xmlns',   'http://www.w3.org/2000/svg');
+    out.setAttribute('width',   W);
+    out.setAttribute('height',  H);
+    out.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+    // White background rect
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bgRect.setAttribute('width',  W);
+    bgRect.setAttribute('height', H);
+    bgRect.setAttribute('fill',   '#ffffff');
+    out.appendChild(bgRect);
+
+    // Stamp each Plotly SVG layer as a <g> inside our output SVG
+    allSvgs.forEach(src => {
+        const g    = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        // Clone all children of this layer's SVG
+        Array.from(src.cloneNode(true).childNodes).forEach(n => g.appendChild(n));
+        out.appendChild(g);
+    });
+
+    // ── Light-mode colour patches ──────────────────────────────
+    // All text → black
+    out.querySelectorAll('text').forEach(t => {
+        t.setAttribute('fill', '#000000');
+        t.style.fill = '#000000';
+    });
+
+    // All rect backgrounds → white
+    out.querySelectorAll('rect').forEach(r => {
+        const f = r.getAttribute('fill') || '';
+        if (f === 'rgba(0,0,0,0)' || f === 'transparent' || f === 'none' || f === '') {
+            r.setAttribute('fill', '#ffffff');
         }
-    }).catch(() => {
-        if (document.getElementById('exportGhost')) document.body.removeChild(ghost);
+        // Dark fills → white
+        if (f === '#000000' || f === '#111111' || f === '#0d0d0d' || f === '#141414') {
+            r.setAttribute('fill', '#ffffff');
+        }
+    });
+
+    // Axis lines and ticks → black, respect current border width
+    const bw = parseFloat(document.getElementById('borderWidth').value) || 2;
+    out.querySelectorAll('path, line').forEach(el => {
+        const stroke = el.getAttribute('stroke') || '';
+        if (stroke && stroke !== 'none') {
+            const cls = el.getAttribute('class') || '';
+            const isAxisOrTick = cls.includes('xlines') || cls.includes('ylines') ||
+                                 cls.includes('xtick')  || cls.includes('ytick') ||
+                                 cls.includes('crisp');
+            const isTraceOrLegend = cls.includes('js-line') || el.closest('.legend') || el.closest('.scatterlayer');
+            if (isAxisOrTick && !isTraceOrLegend) {
+                el.setAttribute('stroke', '#000000');
+                el.setAttribute('stroke-width', bw);
+            }
+        }
+    });
+
+    // Annotation bg rects → semi-white
+    out.querySelectorAll('.annotation-text-g rect').forEach(r => {
+        r.setAttribute('fill', 'rgba(255,255,255,0.9)');
+    });
+
+    // Apply legend styling (dash thickness & centered text) to export SVG
+    applyLegendPostProcessing(out);
+
+    return { svg: out, width: W, height: H };
+}
+
+function svgToDataURL(svg) {
+    const serialized = new XMLSerializer().serializeToString(svg);
+    const blob = new Blob([serialized], { type: 'image/svg+xml' });
+    return URL.createObjectURL(blob);
+}
+
+function svgToPngDataURL(svg, width, height) {
+    return new Promise(resolve => {
+        const serialized = new XMLSerializer().serializeToString(svg);
+        const svgBlob    = new Blob([serialized], { type: 'image/svg+xml;charset=utf-8' });
+        const url        = URL.createObjectURL(svgBlob);
+        const img        = new Image();
+        img.onload = () => {
+            const scale  = Math.max(width / (img.naturalWidth  || width),
+                                    height / (img.naturalHeight || height));
+            const canvas = document.createElement('canvas');
+            canvas.width  = width;
+            canvas.height = height;
+            const ctx    = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            // Centre the image
+            const dw = (img.naturalWidth  || width)  * scale;
+            const dh = (img.naturalHeight || height) * scale;
+            ctx.drawImage(img, (width - dw) / 2, (height - dh) / 2, dw, dh);
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+        img.src = url;
     });
 }
+
+function exportFormat(fmt) {
+    if (fileData.length === 0) return;
+    const name = `TENG_plot_${new Date().toISOString().slice(0,10)}`;
+    const W = 1600, H = 700;
+
+    // Always re-render the preview with the latest UI settings first,
+    // then grab the SVG that Plotly just drew.
+    const summaryRows = rebuildPlotData();
+
+    Plotly.newPlot('plotDiv', plotData, buildPlotLayout('light'), {
+        responsive: true,
+        displayModeBar: false,
+        staticPlot: true
+    }).then(() => {
+        const result = getExportSVG();
+        if (!result) return;
+        const { svg, width, height } = result;
+
+        // 2× the rendered size for a crisp export
+        const W = width  * 2;
+        const H = height * 2;
+
+        if (fmt === 'svg') {
+            const url  = svgToDataURL(svg);
+            const link = document.createElement('a');
+            link.download = name + '.svg';
+            link.href = url;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        } else if (fmt === 'png') {
+            svgToPngDataURL(svg, W, H).then(dataUrl => {
+                const link = document.createElement('a');
+                link.download = name + '.png';
+                link.href = dataUrl;
+                link.click();
+            });
+
+        } else if (fmt === 'jpg') {
+            svgToPngDataURL(svg, W, H).then(dataUrl => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas  = document.createElement('canvas');
+                    canvas.width  = W; canvas.height = H;
+                    const ctx     = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, W, H);
+                    ctx.drawImage(img, 0, 0);
+                    const link = document.createElement('a');
+                    link.download = name + '.jpg';
+                    link.href = canvas.toDataURL('image/jpeg', 0.95);
+                    link.click();
+                };
+                img.src = dataUrl;
+            });
+
+        } else if (fmt === 'pdf') {
+            svgToPngDataURL(svg, W, H).then(dataUrl => {
+                if (!dataUrl) return;
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+                pdf.addImage(dataUrl, 'PNG', 10, 10, 280, 155);
+                pdf.save(name + '.pdf');
+            });
+        }
+
+        // Keep summary table in sync
+        const headerName = getLabelHeaderName();
+        document.getElementById('summaryTable').innerHTML = `
+            <table>
+                <thead><tr><th>${headerName}</th><th>Vpp</th></tr></thead>
+                <tbody>${summaryRows}</tbody>
+            </table>`;
+    });
+}
+
+/* exportPDF alias kept for PDF buttons that reference it */
+function exportPDF() { exportFormat('pdf'); }
 
 /* ─── Boot ───────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     initFileInputs();
     initColorPickers();
+    renderLegendItems();
+    document.getElementById('legendOptions').style.display = 'none';
+
+    // Live sync for all text and style inputs
+    const liveInputs = [
+        'titleLine1', 'titleLine2', 'labelTypeSelect', 'freqInput', 'vppAnnotationFormat',
+        'xLabel', 'yLabel', 'titleSize', 'axisSize', 'annotSize',
+        'lineWidth', 'boldTitle', 'boldScale', 'boldAnnot', 'boldFreq',
+        'yMin', 'yMax', 'legendDashWidth', 'legendDashLength', 'legendRemoveDash',
+        'legendCenterText'
+    ];
+    liveInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                if (id === 'freqInput') syncColorLabels();
+                updatePlot();
+            });
+            el.addEventListener('change', () => {
+                if (id === 'freqInput') syncColorLabels();
+                updatePlot();
+            });
+        }
+    });
 });
 </script>
 </body>
