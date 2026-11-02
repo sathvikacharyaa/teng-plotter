@@ -712,7 +712,6 @@
         <p>Publication-quality plots · CSV import · Multi-format export</p>
         <nav class="site-nav">
             <a href="index.html" class="nav-link nav-link--active">Voltage Plotter</a>
-            <a href="resistor.html" class="nav-link">V-I vs Resistor</a>
             <a href="heatmap.html" class="nav-link">Heatmap Plotter</a>
         </nav>
     </div>
@@ -785,14 +784,6 @@
                             <option value="resistor">Resistor</option>
                             <option value="custom">Custom</option>
                         </select>
-                    </div>
-
-                    <div id="resistorBanner" style="display:none;margin-top:-4px;margin-bottom:6px;padding:9px 12px;background:var(--surface2);border:1px solid #d62728;border-radius:6px;font-size:11px;">
-                        <div style="font-weight:600;color:var(--text);margin-bottom:3px;">⚡ Studying Voltage &amp; Current vs. Load Resistance?</div>
-                        <div style="color:var(--text-dim);font-size:11px;margin-bottom:6px;">Plot dual Y-axis curves (Vpp &amp; Ipp vs. R) with the specialized Resistance Plotter.</div>
-                        <a href="resistor.html" class="btn-ghost" style="display:inline-block;text-align:center;text-decoration:none;padding:4px 10px;font-weight:600;border-color:#d62728;color:#ff6b6b;font-size:11px;">
-                            Open V-I vs Resistor Plotter →
-                        </a>
                     </div>
 
                     <div class="form-group">
@@ -1279,10 +1270,6 @@ function onLabelTypeChange(newType) {
     // Update trace spacing description
     const spacingDesc = document.getElementById('traceSpacingDesc');
     if (spacingDesc) spacingDesc.textContent = preset.spacingDesc;
-
-    // Show/hide resistor banner
-    const banner = document.getElementById('resistorBanner');
-    if (banner) banner.style.display = newType === 'resistor' ? 'block' : 'none';
 
     // Update default legend items if not customized
     const isDefaultLegend = legendItems.length === 2 && Object.values(LABEL_PRESETS).some(p =>
