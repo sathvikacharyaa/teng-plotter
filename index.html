@@ -317,6 +317,54 @@
             background: var(--border2);
         }
 
+        /* ── Plot Signal Mode Toggle ────────────────────────────── */
+        .mode-toggle-group {
+            display: flex;
+            background: #000000;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px;
+            gap: 4px;
+        }
+        .mode-toggle-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 7px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            background: #000000;
+            color: #ffffff;
+            border: 1px solid var(--border2);
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.18s ease;
+            user-select: none;
+        }
+        .mode-toggle-btn input[type="radio"] {
+            display: none;
+        }
+        .mode-toggle-btn:hover:not(.active) {
+            background: #111111;
+            border-color: #444444;
+            color: #ffffff;
+        }
+        .mode-toggle-btn.active {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 1px solid #ffffff !important;
+            font-weight: 700;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+        .column-hint {
+            font-size: 10px;
+            color: var(--text-faint);
+            margin-top: 4px;
+            padding: 2px 2px;
+        }
+
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
         /* Color grid */
@@ -768,11 +816,12 @@
 
     <!-- Header -->
     <div class="header">
-        <h1>TENG Voltage Analysis Plotter</h1>
+        <h1 id="mainPageHeading">TENG Voltage Analysis Plotter</h1>
         <p>Publication-quality plots · CSV import · Multi-format export</p>
         <nav class="site-nav">
-            <a href="index.html" class="nav-link nav-link--active">Voltage Plotter</a>
+            <a href="index.html" class="nav-link nav-link--active" id="mainNavVoltageLink">Voltage Plotter</a>
             <a href="heatmap.html" class="nav-link">Heatmap Plotter</a>
+            <a href="concentration.html" class="nav-link">Vpp vs Loading Plotter</a>
         </nav>
     </div>
 
@@ -788,10 +837,24 @@
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
+                    <!-- Mode Switch: Voltage vs. Load Current -->
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <label style="margin-bottom:5px;font-size:11px;font-weight:600;letter-spacing:0.4px;">SIGNAL TO PLOT</label>
+                        <div class="mode-toggle-group">
+                            <button type="button" class="mode-toggle-btn active" id="modeBtnVoltage" onclick="setPlotMode('voltage')">
+                                Voltage vs. Time
+                            </button>
+                            <button type="button" class="mode-toggle-btn" id="modeBtnCurrent" onclick="setPlotMode('current')">
+                                Load Current vs. Time
+                            </button>
+                        </div>
+                        <div id="columnHintBadge" class="column-hint">Plotting Column 2 (Voltage) vs. Column 1 (Time)</div>
+                    </div>
+
                     <div style="display:flex;gap:6px;margin-bottom:2px;">
                         <input type="file" id="batchFileInput" multiple accept=".csv" style="display:none;" onchange="handleBatchFiles(this.files)">
                         <button type="button" class="btn-ghost" onclick="document.getElementById('batchFileInput').click()" style="flex:1;font-size:11px;padding:6px 10px;">
-                            📁 Choose multiple CSVs at once
+                            Choose multiple CSVs at once
                         </button>
                         <button type="button" class="btn-ghost" onclick="clearAllFiles()" style="font-size:11px;padding:6px 10px;" title="Clear all chosen files">
                             Clear All
@@ -854,7 +917,7 @@
                         <input type="text" id="freqInput" value="1 Hz, 3 Hz, 5 Hz, 7 Hz, 9 Hz, 11 Hz, 13 Hz, 15 Hz, 17 Hz, 19 Hz, 21 Hz, 23 Hz, 25 Hz, 27 Hz">
                     </div>
                     <div class="form-group">
-                        <label>Vpp Peak Label (blank = hide)</label>
+                        <label id="peakAnnotationLabel">Vpp Peak Label (blank = hide)</label>
                         <input type="text" id="vppAnnotationFormat" value="Vpp = {v} V" placeholder="e.g. Vpp = {v} V (leave blank to hide)">
                     </div>
 
@@ -1072,7 +1135,7 @@
 
                         <!-- Vpp label offset (negative = down) -->
                         <div class="offset-row" style="margin-top:6px;">
-                            <span class="offset-row-label">Vpp label</span>
+                            <span class="offset-row-label" id="peakOffsetRowLabel">Vpp label</span>
                             <button class="nudge-btn" onclick="nudgeOffset('vppOffset',-1)" title="Move down">↓</button>
                             <span class="offset-display" id="vppOffsetVal">0%</span>
                             <button class="nudge-btn" onclick="nudgeOffset('vppOffset', 1)" title="Move up">↑</button>
@@ -1085,11 +1148,11 @@
                     <div class="two-col">
                         <div class="form-group">
                             <label>Y-Axis Min</label>
-                            <input type="number" id="yMin" value="-30">
+                            <input type="number" id="yMin" step="any" value="-30">
                         </div>
                         <div class="form-group">
                             <label>Y-Axis Max</label>
-                            <input type="number" id="yMax" value="60">
+                            <input type="number" id="yMax" step="any" value="60">
                         </div>
                     </div>
 
@@ -1205,6 +1268,7 @@
 let fileData  = [];
 let plotData  = [];
 let fileSlots = [];
+let currentPlotMode = 'voltage'; // 'voltage' | 'current'
 
 const DEFAULT_FILE_COUNT = 5;
 const MAX_FILES = 50;
@@ -1314,9 +1378,15 @@ function onLabelTypeChange(newType) {
     const t1El = document.getElementById('titleLine1');
     if (t1El) {
         const curr = t1El.value.trim();
-        const matchesAny = Object.values(LABEL_PRESETS).some(p => p.title1 === curr);
-        if (matchesAny || curr.includes('dependent Induced Output voltage of solution casted') || curr === '') {
-            t1El.value = preset.title1;
+        const matchesAny = Object.values(LABEL_PRESETS).some(p => {
+            const vTitle = p.title1;
+            const iTitle = p.title1.replace(/voltage/gi, 'Load Current');
+            return curr === vTitle || curr === iTitle;
+        });
+        if (matchesAny || curr.includes('dependent Induced Output') || curr.includes('solution casted') || curr === '') {
+            t1El.value = (currentPlotMode === 'current')
+                ? preset.title1.replace(/voltage/gi, 'Load Current')
+                : preset.title1;
         }
     }
 
@@ -1430,7 +1500,7 @@ function updateSlotDisplay(idx) {
         slot.inp.style.display = 'none';
         slot.chip.style.display = 'flex';
         slot.chip.innerHTML = `
-            <span class="file-chip-icon">📄</span>
+            <span class="file-chip-icon" style="display:inline-flex;align-items:center;color:var(--text-dim);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
             <span class="file-chip-name" title="${file.name}">${file.name}</span>
             <button type="button" class="file-chip-remove" title="Remove ${file.name}" onclick="clearFileFromSlot(${idx})">&times;</button>
         `;
@@ -1647,30 +1717,216 @@ function downsample(t, v, maxPts) {
     return { t: out_t, v: out_v };
 }
 
+/* ─── Mode Switching (Voltage vs. Load Current) ──────────────── */
+function getPlotMode() {
+    return currentPlotMode;
+}
+
+function computeNiceYRange(minVal, maxVal) {
+    if (minVal === Infinity || maxVal === -Infinity || isNaN(minVal) || isNaN(maxVal)) {
+        return { min: -10, max: 10 };
+    }
+    let span = maxVal - minVal;
+    if (span <= 0) span = Math.abs(maxVal) || 1;
+    const pad = span * 0.18;
+    let lo = minVal - pad;
+    let hi = maxVal + pad;
+    if (span >= 10) {
+        lo = Math.floor(lo);
+        hi = Math.ceil(hi);
+    } else if (span >= 1) {
+        lo = Math.floor(lo * 10) / 10;
+        hi = Math.ceil(hi * 10) / 10;
+    } else {
+        const factor = Math.pow(10, Math.ceil(-Math.log10(span)) + 1);
+        lo = Math.floor(lo * factor) / factor;
+        hi = Math.ceil(hi * factor) / factor;
+    }
+    return { min: lo, max: hi };
+}
+
+function setPlotMode(mode) {
+    if (mode !== 'voltage' && mode !== 'current') return;
+    currentPlotMode = mode;
+
+    const btnV = document.getElementById('modeBtnVoltage');
+    const btnI = document.getElementById('modeBtnCurrent');
+    if (btnV && btnI) {
+        if (mode === 'voltage') {
+            btnV.classList.add('active');
+            btnI.classList.remove('active');
+        } else {
+            btnI.classList.add('active');
+            btnV.classList.remove('active');
+        }
+    }
+
+    const headingEl = document.getElementById('mainPageHeading');
+    const navLinkEl = document.getElementById('mainNavVoltageLink');
+    const badgeEl = document.getElementById('columnHintBadge');
+    const peakLbl = document.getElementById('peakAnnotationLabel');
+    const peakOffsetLbl = document.getElementById('peakOffsetRowLabel');
+    const vppInput = document.getElementById('vppAnnotationFormat');
+    const yLabelInput = document.getElementById('yLabel');
+    const title1Input = document.getElementById('titleLine1');
+
+    if (mode === 'current') {
+        if (headingEl) headingEl.textContent = 'TENG Load Current Analysis Plotter';
+        document.title = 'TENG Load Current Analysis Plotter';
+        if (navLinkEl) navLinkEl.textContent = 'Load Current Plotter';
+
+        if (badgeEl) {
+            badgeEl.textContent = 'Plotting Column 3 (Load Current in μA) vs. Column 1 (Time)';
+        }
+        if (peakLbl) peakLbl.textContent = 'Ipp Peak Label (blank = hide)';
+        if (peakOffsetLbl) peakOffsetLbl.textContent = 'Ipp label';
+
+        if (vppInput && (vppInput.value === 'Vpp = {v} V' || vppInput.value === '')) {
+            vppInput.value = 'Ipp = {v} μA';
+        }
+        if (yLabelInput && (yLabelInput.value === 'VOLTAGE (V)' || yLabelInput.value === '')) {
+            yLabelInput.value = 'LOAD CURRENT (μA)';
+        }
+        if (title1Input) {
+            title1Input.value = title1Input.value.replace(/voltage/gi, m => m === 'Voltage' ? 'Load Current' : 'load current');
+        }
+    } else {
+        if (headingEl) headingEl.textContent = 'TENG Voltage Analysis Plotter';
+        document.title = 'TENG Voltage Analysis Plotter';
+        if (navLinkEl) navLinkEl.textContent = 'Voltage Plotter';
+
+        if (badgeEl) {
+            badgeEl.textContent = 'Plotting Column 2 (Voltage) vs. Column 1 (Time)';
+        }
+        if (peakLbl) peakLbl.textContent = 'Vpp Peak Label (blank = hide)';
+        if (peakOffsetLbl) peakOffsetLbl.textContent = 'Vpp label';
+
+        if (vppInput && (vppInput.value === 'Ipp = {v} μA' || vppInput.value === '')) {
+            vppInput.value = 'Vpp = {v} V';
+        }
+        if (yLabelInput && (yLabelInput.value === 'LOAD CURRENT (μA)' || yLabelInput.value === 'CURRENT (μA)' || yLabelInput.value === '')) {
+            yLabelInput.value = 'VOLTAGE (V)';
+        }
+        if (title1Input) {
+            title1Input.value = title1Input.value.replace(/load\s*current|current/gi, m => m[0] === m[0].toUpperCase() ? 'Voltage' : 'voltage');
+        }
+    }
+
+    // Auto-adjust Y limits to match the active series if data is loaded
+    if (fileData.length > 0) {
+        let allMin = Infinity, allMax = -Infinity;
+        let missingCol3Files = [];
+
+        fileData.forEach((f, idx) => {
+            let hasValidCol = false;
+            f.data.forEach(r => {
+                const val = (mode === 'current') ? r[2] : r[1];
+                if (val !== null && val !== undefined && !isNaN(val)) {
+                    hasValidCol = true;
+                    if (val < allMin) allMin = val;
+                    if (val > allMax) allMax = val;
+                }
+            });
+            if (mode === 'current' && !hasValidCol) {
+                missingCol3Files.push(f.name || `File ${idx + 1}`);
+            }
+        });
+
+        if (missingCol3Files.length > 0) {
+            setStatus(`Warning: Column 3 (Load Current) was not found in ${missingCol3Files.join(', ')}. Please upload CSVs with 3 columns (Time, Voltage, Load Current).`, 'error');
+        } else {
+            setStatus(`Switched to ${mode === 'current' ? 'Load Current' : 'Voltage'} analysis`, 'success');
+        }
+
+        if (allMin !== Infinity && allMax !== -Infinity) {
+            const bounds = computeNiceYRange(allMin, allMax);
+            document.getElementById('yMin').value = bounds.min;
+            document.getElementById('yMax').value = bounds.max;
+        }
+
+        updatePlot();
+    }
+}
+
 /* ─── CSV Parsing ────────────────────────────────────────────── */
 function parseCSVData(csvText) {
     try {
         const result = Papa.parse(csvText, { dynamicTyping: true, skipEmptyLines: true, header: false });
         let data = result.data;
+        if (!data || data.length === 0) return [];
 
-        // Skip non-numeric header rows
         let startIdx = 0;
-        for (let i = 0; i < Math.min(15, data.length); i++) {
-            if (data[i] && !isNaN(parseFloat(data[i][0])) && !isNaN(parseFloat(data[i][1]))) {
-                startIdx = i; break;
-            }
-        }
-        data = data.slice(startIdx);
+        let timeColIdx = 0;
+        let voltColIdx = 1;
+        let currColIdx = 2; // Default to Column 3
 
-        const clean = [];
-        for (const row of data) {
-            if (row && row.length >= 2) {
-                const t = parseFloat(row[0]), v = parseFloat(row[1]);
-                if (!isNaN(t) && !isNaN(v)) clean.push([t, v]);
+        for (let i = 0; i < Math.min(30, data.length); i++) {
+            const row = data[i];
+            if (row && Array.isArray(row)) {
+                // Check if this row contains column header strings
+                row.forEach((col, idx) => {
+                    const str = String(col).trim();
+                    if (/load\s*current|current|ch2|i_pp/i.test(str)) {
+                        currColIdx = idx;
+                    } else if (/time|sec/i.test(str)) {
+                        timeColIdx = idx;
+                    } else if (/volt|v_pp|ch1/i.test(str)) {
+                        voltColIdx = idx;
+                    }
+                });
+
+                // Check if row has valid numeric data in time and voltage/current
+                const p0 = parseFloat(row[timeColIdx]);
+                const p1 = parseFloat(row[voltColIdx]);
+                if (!isNaN(p0) && !isNaN(p1)) {
+                    startIdx = i;
+                    break;
+                }
             }
         }
+
+        const rawRows = data.slice(startIdx);
+        const clean = [];
+        let hasCol3 = false;
+        let maxAbsCurrent = 0;
+
+        for (const row of rawRows) {
+            if (row && Array.isArray(row) && row.length >= 2) {
+                const t = parseFloat(row[timeColIdx]);
+                const v = parseFloat(row[voltColIdx]);
+                let iVal = null;
+                if (row.length > currColIdx && row[currColIdx] !== null && row[currColIdx] !== undefined && row[currColIdx] !== '') {
+                    const parsedI = parseFloat(row[currColIdx]);
+                    if (!isNaN(parsedI)) {
+                        iVal = parsedI;
+                        hasCol3 = true;
+                        const absI = Math.abs(parsedI);
+                        if (absI > maxAbsCurrent) maxAbsCurrent = absI;
+                    }
+                }
+                if (!isNaN(t) && !isNaN(v)) {
+                    clean.push([t, v, iVal]);
+                }
+            }
+        }
+
+        // Auto-detect unit: if current is in Amperes (|I| < 0.1 A), scale factor is 1,000,000 to convert to microamps (μA)
+        const currentScaleFactor = (hasCol3 && maxAbsCurrent > 0 && maxAbsCurrent < 0.1) ? 1e6 : 1;
+        if (hasCol3 && currentScaleFactor !== 1) {
+            for (let i = 0; i < clean.length; i++) {
+                if (clean[i][2] !== null) {
+                    clean[i][2] = clean[i][2] * currentScaleFactor;
+                }
+            }
+        }
+
+        clean.hasCurrent = hasCol3;
+        clean.currentUnit = (currentScaleFactor === 1e6) ? 'A → μA' : 'μA';
         return clean;
-    } catch (e) { console.error(e); return []; }
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
 }
 
 /* ─── Process files ─────────────────────────────────────────── */
@@ -1702,10 +1958,13 @@ function processFiles() {
         reader.onload = e => {
             const parsed = parseCSVData(e.target.result);
             if (parsed.length === 0) {
-                msgs.push(`✗ File ${slotIndex + 1} (${file.name}): no valid data`);
+                msgs.push(`File ${slotIndex + 1} (${file.name}): no valid data`);
             } else {
-                fileData.push({ index: slotIndex, name: file.name, data: parsed });
-                msgs.push(`✓ File ${slotIndex + 1} (${file.name}): ${parsed.length} rows`);
+                const colInfo = parsed.hasCurrent
+                    ? `3 cols: Time, Voltage, Load Current (${parsed.currentUnit || 'μA'})`
+                    : '2 cols: Time, Voltage';
+                fileData.push({ index: slotIndex, name: file.name, data: parsed, hasCurrent: parsed.hasCurrent });
+                msgs.push(`File ${slotIndex + 1} (${file.name}): ${parsed.length} rows (${colInfo})`);
             }
             done++;
             showDebug(msgs);
@@ -1746,16 +2005,20 @@ function generateInitialPlot() {
         document.getElementById(id).classList.remove('collapsed');
     });
 
-    // Auto Y range
+    // Auto Y range based on current mode
+    const isCurrent = (currentPlotMode === 'current');
     let allMin = Infinity, allMax = -Infinity;
     fileData.forEach(f => f.data.forEach(r => {
-        if (r[1] < allMin) allMin = r[1];
-        if (r[1] > allMax) allMax = r[1];
+        const val = isCurrent ? r[2] : r[1];
+        if (val !== null && val !== undefined && !isNaN(val)) {
+            if (val < allMin) allMin = val;
+            if (val > allMax) allMax = val;
+        }
     }));
-    if (allMin !== Infinity) {
-        const pad = (allMax - allMin) * 0.22;
-        document.getElementById('yMin').value = Math.floor(allMin - pad);
-        document.getElementById('yMax').value = Math.ceil(allMax + pad);
+    if (allMin !== Infinity && allMax !== -Infinity) {
+        const bounds = computeNiceYRange(allMin, allMax);
+        document.getElementById('yMin').value = bounds.min;
+        document.getElementById('yMax').value = bounds.max;
     }
 
     // Sync color picker labels with series labels
@@ -1886,6 +2149,10 @@ function toggleLegend() {
 function rebuildPlotData() {
     plotData = [];
 
+    const isCurrentMode = (currentPlotMode === 'current');
+    const unit = isCurrentMode ? 'μA' : 'V';
+    const hoverUnit = isCurrentMode ? 'I = %{y:.2f} μA' : 'V = %{y:.2f} V';
+
     const slotCount = Math.max(fileSlots.length, fileData.length, 1);
     const colors = Array.from({length: slotCount}, (_, i) => {
         const el = document.getElementById(`color${i}`);
@@ -1904,15 +2171,21 @@ function rebuildPlotData() {
         const data = file.data;
         if (data.length < 2) return;
 
-        const timeCol    = data.map(r => r[0]);
-        const voltageCol = data.map(r => r[1]);
+        const timeCol = data.map(r => r[0]);
+        // Extract signal values: Column 3 (r[2]) if in Current mode, else Column 2 (r[1])
+        const signalCol = data.map(r => {
+            if (isCurrentMode) {
+                return (r.length >= 3 && r[2] !== null && r[2] !== undefined && !isNaN(r[2])) ? r[2] : 0;
+            }
+            return r[1];
+        });
 
-        const vMax    = arrMax(voltageCol);
-        const vMin    = arrMin(voltageCol);
-        const vppFull = vMax - vMin;
+        const sigMax   = arrMax(signalCol);
+        const sigMin   = arrMin(signalCol);
+        const peakFull = sigMax - sigMin;
 
         const half = Math.floor(data.length / 2);
-        const { t: tDs, v: vDs } = downsample(timeCol.slice(0, half), voltageCol.slice(0, half), 3000);
+        const { t: tDs, v: vDs } = downsample(timeCol.slice(0, half), signalCol.slice(0, half), 3000);
 
         const tBase  = arrMin(tDs);
         const tZero  = tDs.map(t => t - tBase);
@@ -1927,15 +2200,15 @@ function rebuildPlotData() {
             type: 'scatter', mode: 'lines',
             name: traceName,
             line: { color: traceColor, width: lineWidth },
-            hovertemplate: '<b>%{fullData.name}</b><br>t = %{x:.3f} s<br>V = %{y:.2f} V<extra></extra>',
+            hovertemplate: `<b>%{fullData.name}</b><br>t = %{x:.3f} s<br>${hoverUnit}<extra></extra>`,
             showlegend: false,
-            _vpp: vppFull,
+            _vpp: peakFull,
             _fileIndex: file.index
         });
 
         summaryRows += `<tr>
             <td>${traceName}</td>
-            <td>${vppFull.toFixed(2)} V</td>
+            <td>${peakFull.toFixed(2)} ${unit}</td>
         </tr>`;
 
         tOffset = tFinal[tFinal.length - 1] + (enableSpacing ? spacingValue : dt);
@@ -2008,7 +2281,8 @@ function buildPlotLayout(theme) {
     const freqLabels  = rawFreqVal ? rawFreqVal.split(',').map(s => s.trim()) : [];
 
     const vppFormatInp= document.getElementById('vppAnnotationFormat');
-    const vppFormat   = vppFormatInp ? vppFormatInp.value.trim() : 'Vpp = {v} V';
+    const defaultPeakFmt = (currentPlotMode === 'current') ? 'Ipp = {v} μA' : 'Vpp = {v} V';
+    const vppFormat   = vppFormatInp ? vppFormatInp.value.trim() : defaultPeakFmt;
 
     const xLabelRaw   = (document.getElementById('xLabel').value || '').trim();
     const yLabelRaw   = (document.getElementById('yLabel').value || '').trim();
@@ -2299,9 +2573,10 @@ function updatePlot() {
 
     /* Summary table */
     const headerName = getLabelHeaderName();
+    const peakHeader = (currentPlotMode === 'current') ? 'Ipp' : 'Vpp';
     document.getElementById('summaryTable').innerHTML = `
         <table>
-            <thead><tr><th>${headerName}</th><th>Vpp</th></tr></thead>
+            <thead><tr><th>${headerName}</th><th>${peakHeader}</th></tr></thead>
             <tbody>${summaryRows}</tbody>
         </table>`;
 }
@@ -2608,9 +2883,10 @@ function exportFormat(fmt) {
 
         // Keep summary table in sync
         const headerName = getLabelHeaderName();
+        const peakHeader = (currentPlotMode === 'current') ? 'Ipp' : 'Vpp';
         document.getElementById('summaryTable').innerHTML = `
             <table>
-                <thead><tr><th>${headerName}</th><th>Vpp</th></tr></thead>
+                <thead><tr><th>${headerName}</th><th>${peakHeader}</th></tr></thead>
                 <tbody>${summaryRows}</tbody>
             </table>`;
     });
