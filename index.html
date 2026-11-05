@@ -212,7 +212,11 @@
             padding: 6px 10px;
             border-radius: 5px;
             border: 1px solid var(--border2);
-            transition: border-color 0.15s;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .file-input-row.has-file {
+            border-color: rgba(46, 204, 113, 0.45);
+            background: rgba(46, 204, 113, 0.04);
         }
         .file-input-row:hover {
             border-color: var(--border);
@@ -222,6 +226,61 @@
             color: var(--text-dim);
             font-weight: 600;
             min-width: 44px;
+            flex-shrink: 0;
+        }
+        .file-slot-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+        }
+        .file-slot-content input[type="file"] {
+            width: 100%;
+        }
+        .file-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 3px 8px;
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+        .file-chip-icon {
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        .file-chip-name {
+            font-size: 11px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--text);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+        .file-chip-remove {
+            background: none;
+            border: none;
+            color: var(--text-faint);
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            padding: 0 4px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+        .file-chip-remove:hover {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.18);
         }
         .file-input-row .row-remove-btn {
             background: none;
@@ -233,6 +292,7 @@
             line-height: 1;
             border-radius: 4px;
             transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
         }
         .file-input-row .row-remove-btn:hover {
             color: var(--error);
@@ -868,6 +928,12 @@
                             </div>
                         </div>
 
+                        <!-- Bold legend text -->
+                        <label class="toggle-label" id="boldLegendToggle">
+                            <input type="checkbox" id="boldLegend" checked onchange="syncBoldLegend(this.checked)">
+                            Bold legend text
+                        </label>
+
                         <!-- Surrounding box -->
                         <label class="toggle-label">
                             <input type="checkbox" id="legendBox" checked onchange="updatePlot()">
@@ -973,6 +1039,7 @@
                             <label class="toggle-label"><input type="checkbox" id="boldScale" checked> Scale &amp; Labels</label>
                             <label class="toggle-label"><input type="checkbox" id="boldAnnot" checked> Annotations</label>
                             <label class="toggle-label"><input type="checkbox" id="boldFreq" checked> <span id="boldFreqText">Freq Label</span></label>
+                            <label class="toggle-label"><input type="checkbox" id="boldLegendSync" checked onchange="syncBoldLegend(this.checked)"> Legend</label>
                         </div>
                     </div>
 
@@ -1321,10 +1388,21 @@ function addFileInputSlot() {
     lbl.textContent = `File ${idx + 1}`;
     lbl.style.minWidth = '44px';
 
+    const contentWrap = document.createElement('div');
+    contentWrap.className = 'file-slot-content';
+
     const inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = '.csv';
     inp.id = `file${idx}`;
+    inp.onchange = () => handleSlotFileChange(idx);
+
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    chip.style.display = 'none';
+
+    contentWrap.appendChild(inp);
+    contentWrap.appendChild(chip);
 
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
@@ -1334,20 +1412,75 @@ function addFileInputSlot() {
     removeBtn.onclick = () => removeFileInputSlot(idx);
 
     row.appendChild(lbl);
-    row.appendChild(inp);
+    row.appendChild(contentWrap);
     row.appendChild(removeBtn);
 
     container.appendChild(row);
-    fileSlots.push({ row, inp, fileObj: null });
+    fileSlots.push({ row, inp, chip, fileObj: null });
 
     syncColorPickers();
 }
 
+function updateSlotDisplay(idx) {
+    const slot = fileSlots[idx];
+    if (!slot) return;
+    const file = (slot.inp && slot.inp.files && slot.inp.files[0]) || slot.fileObj;
+    if (file) {
+        slot.row.classList.add('has-file');
+        slot.inp.style.display = 'none';
+        slot.chip.style.display = 'flex';
+        slot.chip.innerHTML = `
+            <span class="file-chip-icon">📄</span>
+            <span class="file-chip-name" title="${file.name}">${file.name}</span>
+            <button type="button" class="file-chip-remove" title="Remove ${file.name}" onclick="clearFileFromSlot(${idx})">&times;</button>
+        `;
+    } else {
+        slot.row.classList.remove('has-file');
+        slot.inp.style.display = 'block';
+        slot.chip.style.display = 'none';
+        slot.chip.innerHTML = '';
+    }
+}
+
+function handleSlotFileChange(idx) {
+    const slot = fileSlots[idx];
+    if (!slot) return;
+    if (slot.inp && slot.inp.files && slot.inp.files[0]) {
+        slot.fileObj = slot.inp.files[0];
+    }
+    updateSlotDisplay(idx);
+    const fname = slot.fileObj ? slot.fileObj.name : '';
+    if (fname) {
+        setStatus(`Selected ${fname} for File ${idx + 1}. Click "Generate Plot".`);
+    }
+}
+
+function clearFileFromSlot(idx) {
+    const slot = fileSlots[idx];
+    if (!slot) return;
+    const oldName = ((slot.inp && slot.inp.files && slot.inp.files[0]) || slot.fileObj || {}).name || '';
+    if (slot.inp) slot.inp.value = '';
+    slot.fileObj = null;
+    updateSlotDisplay(idx);
+
+    // If active plot data exists, remove data for this slot & update plot
+    if (fileData.length > 0) {
+        fileData = fileData.filter(f => f.index !== idx);
+        if (fileData.length > 0) {
+            updatePlot();
+            setStatus(`Removed ${oldName || ('File ' + (idx + 1))}`, 'success');
+        } else {
+            plotData = [];
+            setStatus('All files removed. Ready to upload files.');
+        }
+    } else {
+        setStatus(`Removed ${oldName || ('File ' + (idx + 1))}`);
+    }
+}
+
 function removeFileInputSlot(idx) {
     if (fileSlots.length <= 1) {
-        if (fileSlots[0] && fileSlots[0].inp) fileSlots[0].inp.value = '';
-        if (fileSlots[0]) fileSlots[0].fileObj = null;
-        fileData = [];
+        clearFileFromSlot(0);
         return;
     }
 
@@ -1357,16 +1490,25 @@ function removeFileInputSlot(idx) {
     // Re-index remaining rows
     const container = document.getElementById('fileInputs');
     const rows = Array.from(container.children);
+    const prevSlots = [...fileSlots];
     fileSlots = [];
     rows.forEach((r, i) => {
         r.id = `fileRow_${i}`;
         const lbl = r.querySelector('label');
         if (lbl) lbl.textContent = `File ${i + 1}`;
         const inp = r.querySelector('input[type="file"]');
-        if (inp) inp.id = `file${i}`;
+        if (inp) {
+            inp.id = `file${i}`;
+            inp.onchange = () => handleSlotFileChange(i);
+        }
+        const chip = r.querySelector('.file-chip');
         const btn = r.querySelector('.row-remove-btn');
         if (btn) btn.onclick = () => removeFileInputSlot(i);
-        fileSlots.push({ row: r, inp, fileObj: (inp && inp.files && inp.files[0]) || null });
+
+        const origSlot = prevSlots.find(s => s.row === r);
+        const fileObj = (origSlot && origSlot.fileObj) || (inp && inp.files && inp.files[0]) || null;
+        fileSlots.push({ row: r, inp, chip, fileObj });
+        updateSlotDisplay(i);
     });
 
     syncColorPickers();
@@ -1400,23 +1542,28 @@ function handleBatchFiles(fileList) {
     const count = sorted.length;
     for (let i = 0; i < count; i++) {
         const slot = fileSlots[i];
-        if (slot && slot.inp) {
-            try {
-                const dt = new DataTransfer();
-                dt.items.add(sorted[i]);
-                slot.inp.files = dt.files;
-            } catch (err) {
-                slot.fileObj = sorted[i];
+        if (slot) {
+            slot.fileObj = sorted[i];
+            if (slot.inp) {
+                try {
+                    const dt = new DataTransfer();
+                    dt.items.add(sorted[i]);
+                    slot.inp.files = dt.files;
+                } catch (err) {
+                    // fallback to slot.fileObj
+                }
             }
+            updateSlotDisplay(i);
         }
     }
     setStatus(`Assigned ${count} file${count > 1 ? 's' : ''} (File 1 to File ${count}). Click "Generate Plot".`, 'success');
 }
 
 function clearAllFiles() {
-    fileSlots.forEach(slot => {
+    fileSlots.forEach((slot, i) => {
         if (slot.inp) slot.inp.value = '';
         slot.fileObj = null;
+        updateSlotDisplay(i);
     });
     const batchInp = document.getElementById('batchFileInput');
     if (batchInp) batchInp.value = '';
@@ -1799,18 +1946,20 @@ function rebuildPlotData() {
         const removeAllDashes = document.getElementById('legendRemoveDash') ? document.getElementById('legendRemoveDash').checked : false;
         const legendDashWVal  = parseFloat(document.getElementById('legendDashWidth').value);
         const legendDashW     = isNaN(legendDashWVal) ? 2.5 : Math.max(0, legendDashWVal);
+        const boldLegend      = document.getElementById('boldLegend') ? document.getElementById('boldLegend').checked : false;
 
         legendItems.forEach(item => {
             const itemText = (item.text || '').trim();
             if (!itemText) return; // Do not add blank legend items
 
             const noDash = removeAllDashes || item.dash === 'none' || legendDashW === 0;
+            const displayName = boldLegend ? `<b>${itemText}</b>` : itemText;
 
             plotData.push({
                 x: [0, 0], y: [0, 0],
                 type: 'scatter',
                 mode: noDash ? 'none' : 'lines',
-                name: itemText,
+                name: displayName,
                 ...(noDash ? {} : {
                     line: { color: item.color, dash: item.dash, width: legendDashW }
                 }),
@@ -1938,6 +2087,8 @@ function buildPlotLayout(theme) {
         const lx = isRight ? 1 : 0;
         const lxanchor = isRight ? 'right' : 'left';
 
+        const boldLegend = document.getElementById('boldLegend') ? document.getElementById('boldLegend').checked : false;
+
         legendConfig = {
             x: lx, y: 1,
             xanchor: lxanchor, yanchor: 'top',
@@ -1945,7 +2096,12 @@ function buildPlotLayout(theme) {
             bgcolor: 'rgba(0,0,0,0)',
             borderwidth: (legendBox && !legendDashed) ? legendBorderW : 0,
             bordercolor: legendBorderCol,
-            font: { size: legendFontSize, family: 'Times New Roman, serif', color: tc },
+            font: {
+                size: legendFontSize,
+                family: 'Times New Roman, serif',
+                color: tc,
+                weight: boldLegend ? 'bold' : 'normal'
+            },
             traceorder: 'normal',
             itemsizing: 'trace',
             itemwidth: legendDashLen
@@ -2080,9 +2236,28 @@ function applyLegendPostProcessing(container) {
         }
     }
 
+    const boldLegend = document.getElementById('boldLegend') ? document.getElementById('boldLegend').checked : false;
+
     traces.forEach(tr => {
         const txt = tr.querySelector('text.legendtext');
         if (!txt) return;
+
+        // Apply bold font-weight
+        if (boldLegend) {
+            txt.style.fontWeight = 'bold';
+            txt.setAttribute('font-weight', 'bold');
+            txt.querySelectorAll('tspan').forEach(ts => {
+                ts.style.fontWeight = 'bold';
+                ts.setAttribute('font-weight', 'bold');
+            });
+        } else {
+            txt.style.fontWeight = 'normal';
+            txt.setAttribute('font-weight', 'normal');
+            txt.querySelectorAll('tspan').forEach(ts => {
+                ts.style.fontWeight = 'normal';
+                ts.setAttribute('font-weight', 'normal');
+            });
+        }
 
         // Check if this trace has dash removed
         const line = tr.querySelector('.legendlines path');
@@ -2441,6 +2616,14 @@ function exportFormat(fmt) {
     });
 }
 
+function syncBoldLegend(val) {
+    const b1 = document.getElementById('boldLegend');
+    const b2 = document.getElementById('boldLegendSync');
+    if (b1) b1.checked = val;
+    if (b2) b2.checked = val;
+    updatePlot();
+}
+
 /* exportPDF alias kept for PDF buttons that reference it */
 function exportPDF() { exportFormat('pdf'); }
 
@@ -2455,7 +2638,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const liveInputs = [
         'titleLine1', 'titleLine2', 'labelTypeSelect', 'freqInput', 'vppAnnotationFormat',
         'xLabel', 'yLabel', 'titleSize', 'axisSize', 'annotSize',
-        'lineWidth', 'boldTitle', 'boldScale', 'boldAnnot', 'boldFreq',
+        'lineWidth', 'boldTitle', 'boldScale', 'boldAnnot', 'boldFreq', 'boldLegend', 'boldLegendSync',
         'yMin', 'yMax', 'legendDashWidth', 'legendDashLength', 'legendRemoveDash',
         'legendCenterText'
     ];
