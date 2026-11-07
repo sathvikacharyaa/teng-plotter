@@ -688,16 +688,23 @@
             height: 4px;
         }
 
-        /* ── Plot export bar ──────────────────────────────────────── */
+        /* ── Plot export / Quick Actions bar ───────────────────────── */
         .plot-export-bar {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 12px;
-            padding: 10px 14px;
+            padding: 8px 12px;
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             flex-wrap: wrap;
+            margin-bottom: 4px;
+        }
+        .plot-export-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .plot-export-label {
             font-size: 11px;
@@ -711,21 +718,22 @@
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .btn-export-bar {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 5px;
             background: var(--surface2);
             color: var(--text);
             border: 1px solid var(--border2);
             border-radius: 5px;
-            padding: 6px 14px;
-            font-size: 12px;
+            padding: 5px 12px;
+            font-size: 11px;
             font-weight: 600;
             font-family: 'Inter', sans-serif;
             cursor: pointer;
-            transition: background 0.15s, color 0.15s;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
             white-space: nowrap;
         }
         .btn-export-bar:hover { background: var(--border2); color: var(--accent); }
@@ -896,6 +904,12 @@
                             <input type="hidden" id="titleYOffset" value="20">
                             <span style="font-size:10px;color:var(--text-faint);margin-left:4px;">px offset</span>
                         </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top:4px;">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="titleInsideMargin" onchange="replot()"> Keep Title Inside Margin
+                        </label>
                     </div>
 
                     <!-- Series Parameter / Label Type Option -->
@@ -1177,13 +1191,44 @@
                 </div>
             </div>
 
-            <!-- Export -->
+            <!-- Export Settings -->
             <div class="panel collapsed" id="exportSection">
                 <div class="panel-header" onclick="togglePanel('exportSection')">
-                    <span class="panel-title">Export</span>
+                    <span class="panel-title">Export Settings</span>
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
+                    <div class="form-group">
+                        <label>Preset Size</label>
+                        <select id="exportPreset" onchange="applyExportPreset(this.value)">
+                            <option value="1600x700" selected>Default (1600 × 700)</option>
+                            <option value="1920x1080">Full HD (1920 × 1080)</option>
+                            <option value="1200x800">Standard (1200 × 800)</option>
+                            <option value="1000x1000">Square (1000 × 1000)</option>
+                            <option value="800x600">Journal Single (800 × 600)</option>
+                            <option value="1400x900">Journal Double (1400 × 900)</option>
+                            <option value="custom">Custom Dimensions</option>
+                        </select>
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Export Width (px)</label>
+                            <input type="number" id="exportWidth" value="1600" oninput="document.getElementById('exportPreset').value='custom'">
+                        </div>
+                        <div class="form-group">
+                            <label>Export Height (px)</label>
+                            <input type="number" id="exportHeight" value="700" oninput="document.getElementById('exportPreset').value='custom'">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Resolution Scale</label>
+                        <select id="exportScale">
+                            <option value="1">1x (Standard)</option>
+                            <option value="2">2x (Retina / HD)</option>
+                            <option value="3" selected>3x (300 DPI Publication)</option>
+                            <option value="4">4x (Ultra HD)</option>
+                        </select>
+                    </div>
                     <div class="export-grid">
                         <button class="btn-ghost" onclick="exportFormat('png')">PNG</button>
                         <button class="btn-ghost" onclick="exportFormat('jpg')">JPG</button>
@@ -1199,6 +1244,39 @@
         <!-- ── Right Column ─────────────────────────────────── -->
         <div class="right-col">
 
+            <!-- Quick Actions Bar (matches Vpp vs Loading Plotter) -->
+            <div class="plot-export-bar" id="plotExportBar">
+                <div class="plot-export-left">
+                    <span class="plot-export-label">Quick Actions</span>
+                </div>
+                <div class="plot-export-btns">
+                    <button class="btn-export-bar" onclick="exportFormat('png')" title="Export PNG (300 DPI)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PNG (300 DPI)
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('jpg')" title="Export JPG Image">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        JPG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('svg')" title="Export Vector SVG">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        SVG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportPDF()" title="Export Publication PDF">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PDF
+                    </button>
+                    <button class="btn-export-bar" onclick="downloadDataCSV()" title="Download Summary as CSV">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        CSV Data
+                    </button>
+                    <button class="btn-export-bar" onclick="updatePlot()" title="Redraw and update plot">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Redraw Plot
+                    </button>
+                </div>
+            </div>
+
             <!-- Placeholder -->
             <div class="plot-placeholder" id="plotPlaceholder">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
@@ -1210,29 +1288,6 @@
             <!-- Plot -->
             <div class="plot-wrapper hidden" id="plotContainer">
                 <div id="plotDiv"></div>
-            </div>
-
-            <!-- Export bar — shown after plot is generated -->
-            <div class="plot-export-bar hidden" id="plotExportBar">
-                <span class="plot-export-label">Export Plot</span>
-                <div class="plot-export-btns">
-                    <button class="btn-export-bar" onclick="exportFormat('png')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        PNG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportFormat('jpg')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        JPG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportFormat('svg')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        SVG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportPDF()">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        PDF
-                    </button>
-                </div>
             </div>
 
             <!-- Summary -->
@@ -2268,13 +2323,16 @@ function buildPlotLayout(theme) {
     const titleWeight = boldTitle ? 'bold' : 'normal';
     const scaleWeight = boldScale ? 'bold' : 'normal';
 
+    const titleInsideMargin = document.getElementById('titleInsideMargin') ? document.getElementById('titleInsideMargin').checked : false;
     const t1 = (document.getElementById('titleLine1').value || '').trim();
     const t2 = (document.getElementById('titleLine2').value || '').trim();
     const titleParts  = [t1, t2].filter(Boolean);
     const hasTitle    = titleParts.length > 0;
     const titleText   = titleParts.join('<br>');
     const topMargin   = hasTitle
-        ? Math.round(titleParts.length * titleSize * 1.6 + 18 + Math.max(0, -titleYOffset))
+        ? (titleInsideMargin
+            ? 35
+            : Math.round(titleParts.length * titleSize * 1.6 + 18 + Math.max(0, -titleYOffset)))
         : 25;
 
     const rawFreqVal  = (document.getElementById('freqInput').value || '').trim();
@@ -2401,7 +2459,17 @@ function buildPlotLayout(theme) {
 
     return {
         ...(hasTitle ? {
-            title: {
+            title: titleInsideMargin ? {
+                text: boldTitle ? `<b>${titleText}</b>` : titleText,
+                font: { size: titleSize, family: 'Times New Roman, serif', color: tc, weight: titleWeight },
+                xref: 'paper',
+                yref: 'paper',
+                x: 0.5,
+                xanchor: 'center',
+                yanchor: 'top',
+                y: Math.max(0.7, Math.min(0.99, 0.96 + (titleYOffset - 20) * 0.005)),
+                pad: { t: 0, b: 0 }
+            } : {
                 text: boldTitle ? `<b>${titleText}</b>` : titleText,
                 font: { size: titleSize, family: 'Times New Roman, serif', color: tc, weight: titleWeight },
                 x: 0.5, xanchor: 'center', yanchor: 'top', y: 1,
@@ -2815,29 +2883,90 @@ function svgToPngDataURL(svg, width, height) {
     });
 }
 
+/* ─── Export Presets & CSV Data Download ─────────────────────── */
+function applyExportPreset(val) {
+    if (val === 'custom') return;
+    const [w, h] = val.split('x').map(Number);
+    if (w && h) {
+        document.getElementById('exportWidth').value = w;
+        document.getElementById('exportHeight').value = h;
+    }
+}
+
+function downloadDataCSV() {
+    if (fileData.length === 0) {
+        alert('Please upload CSV file(s) and click Generate Plot first.');
+        return;
+    }
+    const table = document.querySelector('#summaryTable table');
+    let csv = '';
+    if (table) {
+        const rows = Array.from(table.querySelectorAll('tr'));
+        csv = rows.map(r => Array.from(r.querySelectorAll('th, td')).map(c => `"${c.innerText.trim()}"`).join(',')).join('\n');
+    } else {
+        const peakHeader = (currentPlotMode === 'current') ? 'Ipp' : 'Vpp';
+        csv = `Filename,${peakHeader}\n` + fileData.map(f => `"${f.name}",${f.vpp !== null ? f.vpp.toFixed(3) : ''}`).join('\n');
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `TENG_data_summary_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+}
+
 function exportFormat(fmt) {
-    if (fileData.length === 0) return;
+    if (fileData.length === 0) {
+        alert('Please upload CSV file(s) and click Generate Plot first.');
+        return;
+    }
     const name = `TENG_plot_${new Date().toISOString().slice(0,10)}`;
-    const W = 1600, H = 700;
+    const exportW = parseInt(document.getElementById('exportWidth')?.value) || 1600;
+    const exportH = parseInt(document.getElementById('exportHeight')?.value) || 700;
+    const exportScale = parseInt(document.getElementById('exportScale')?.value) || 3;
 
-    // Always re-render the preview with the latest UI settings first,
-    // then grab the SVG that Plotly just drew.
+    // Always re-render with the latest UI settings
     const summaryRows = rebuildPlotData();
+    const lightLayout = buildPlotLayout('light');
+    lightLayout.width = exportW;
+    lightLayout.height = exportH;
 
-    Plotly.newPlot('plotDiv', plotData, buildPlotLayout('light'), {
-        responsive: true,
+    // Scale fonts proportionally if custom export width differs from base 1200
+    const fontScale = exportW / 1200;
+    if (fontScale !== 1) {
+        if (lightLayout.title && lightLayout.title.font) {
+            lightLayout.title.font.size = Math.round(lightLayout.title.font.size * fontScale);
+        }
+        if (lightLayout.xaxis && lightLayout.xaxis.title && lightLayout.xaxis.title.font) {
+            lightLayout.xaxis.title.font.size = Math.round(lightLayout.xaxis.title.font.size * fontScale);
+        }
+        if (lightLayout.yaxis && lightLayout.yaxis.title && lightLayout.yaxis.title.font) {
+            lightLayout.yaxis.title.font.size = Math.round(lightLayout.yaxis.title.font.size * fontScale);
+        }
+        if (lightLayout.annotations && Array.isArray(lightLayout.annotations)) {
+            lightLayout.annotations.forEach(a => {
+                if (a.font && a.font.size) a.font.size = Math.round(a.font.size * fontScale);
+            });
+        }
+        if (lightLayout.legend && lightLayout.legend.font) {
+            lightLayout.legend.font.size = Math.round(lightLayout.legend.font.size * fontScale);
+        }
+    }
+
+    Plotly.newPlot('plotDiv', plotData, lightLayout, {
+        responsive: false,
         displayModeBar: false,
         staticPlot: true
     }).then(() => {
         const result = getExportSVG();
         if (!result) return;
-        const { svg, width, height } = result;
+        const { svg } = result;
 
-        // 2× the rendered size for a crisp export
-        const W = width  * 2;
-        const H = height * 2;
+        const canvasW = exportW * exportScale;
+        const canvasH = exportH * exportScale;
 
         if (fmt === 'svg') {
+            svg.setAttribute('width', exportW);
+            svg.setAttribute('height', exportH);
             const url  = svgToDataURL(svg);
             const link = document.createElement('a');
             link.download = name + '.svg';
@@ -2846,7 +2975,7 @@ function exportFormat(fmt) {
             setTimeout(() => URL.revokeObjectURL(url), 1000);
 
         } else if (fmt === 'png') {
-            svgToPngDataURL(svg, W, H).then(dataUrl => {
+            svgToPngDataURL(svg, canvasW, canvasH).then(dataUrl => {
                 const link = document.createElement('a');
                 link.download = name + '.png';
                 link.href = dataUrl;
@@ -2854,14 +2983,14 @@ function exportFormat(fmt) {
             });
 
         } else if (fmt === 'jpg') {
-            svgToPngDataURL(svg, W, H).then(dataUrl => {
+            svgToPngDataURL(svg, canvasW, canvasH).then(dataUrl => {
                 const img = new Image();
                 img.onload = () => {
                     const canvas  = document.createElement('canvas');
-                    canvas.width  = W; canvas.height = H;
+                    canvas.width  = canvasW; canvas.height = canvasH;
                     const ctx     = canvas.getContext('2d');
                     ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, W, H);
+                    ctx.fillRect(0, 0, canvasW, canvasH);
                     ctx.drawImage(img, 0, 0);
                     const link = document.createElement('a');
                     link.download = name + '.jpg';
@@ -2872,14 +3001,21 @@ function exportFormat(fmt) {
             });
 
         } else if (fmt === 'pdf') {
-            svgToPngDataURL(svg, W, H).then(dataUrl => {
+            svgToPngDataURL(svg, canvasW, canvasH).then(dataUrl => {
                 if (!dataUrl) return;
                 const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                pdf.addImage(dataUrl, 'PNG', 10, 10, 280, 155);
+                const orientation = exportW >= exportH ? 'landscape' : 'portrait';
+                const pdf = new jsPDF({ orientation, unit: 'pt', format: [exportW, exportH] });
+                pdf.addImage(dataUrl, 'PNG', 0, 0, exportW, exportH);
                 pdf.save(name + '.pdf');
             });
         }
+
+        // Restore dark preview layout on screen
+        Plotly.newPlot('plotDiv', plotData, buildPlotLayout('dark'), {
+            responsive: true,
+            displayModeBar: false
+        });
 
         // Keep summary table in sync
         const headerName = getLabelHeaderName();
@@ -2912,7 +3048,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Live sync for all text and style inputs
     const liveInputs = [
-        'titleLine1', 'titleLine2', 'labelTypeSelect', 'freqInput', 'vppAnnotationFormat',
+        'titleLine1', 'titleLine2', 'titleInsideMargin', 'labelTypeSelect', 'freqInput', 'vppAnnotationFormat',
         'xLabel', 'yLabel', 'titleSize', 'axisSize', 'annotSize',
         'lineWidth', 'boldTitle', 'boldScale', 'boldAnnot', 'boldFreq', 'boldLegend', 'boldLegendSync',
         'yMin', 'yMax', 'legendDashWidth', 'legendDashLength', 'legendRemoveDash',

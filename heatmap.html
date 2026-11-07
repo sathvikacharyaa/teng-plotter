@@ -350,25 +350,57 @@
         .plot-placeholder span   { font-size: 13px; font-weight: 400; color: var(--text-dim); }
         .plot-placeholder strong { color: var(--text-dim); font-weight: 500; }
 
-        /* ── Export bar ───────────────────────────────────────── */
+        /* ── Plot export / Quick Actions bar ───────────────────────── */
         .plot-export-bar {
-            display: flex; align-items: center; gap: 12px;
-            padding: 10px 14px;
-            background: var(--surface); border: 1px solid var(--border);
-            border-radius: var(--radius); flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 12px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            flex-wrap: wrap;
             width: 100%;
             max-width: 698px;
+            box-sizing: border-box;
             flex-shrink: 0;
+            margin-bottom: 4px;
         }
-        .plot-export-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-dim); white-space: nowrap; }
-        .plot-export-btns  { display: flex; gap: 6px; flex-wrap: wrap; }
+        .plot-export-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .plot-export-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+        .plot-export-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
         .btn-export-bar {
-            display: flex; align-items: center; gap: 5px;
-            background: var(--surface2); color: var(--text);
-            border: 1px solid var(--border2); border-radius: 5px;
-            padding: 6px 14px; font-size: 12px; font-weight: 600;
-            font-family: 'Inter', sans-serif; cursor: pointer;
-            transition: background 0.15s, color 0.15s; white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
         }
         .btn-export-bar:hover { background: var(--border2); color: var(--accent); }
 
@@ -637,13 +669,43 @@
                 </div>
             </div>
 
-            <!-- Export -->
+            <!-- Export Settings -->
             <div class="panel collapsed" id="exportSection">
                 <div class="panel-header" onclick="togglePanel('exportSection')">
-                    <span class="panel-title">Export</span>
+                    <span class="panel-title">Export Settings</span>
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
+                    <div class="form-group">
+                        <label>Preset Size</label>
+                        <select id="exportPreset" onchange="applyExportPreset(this.value)">
+                            <option value="800x800" selected>Default Square (800 × 800)</option>
+                            <option value="1000x1000">Large Square (1000 × 1000)</option>
+                            <option value="1200x1200">Publication High-Res (1200 × 1200)</option>
+                            <option value="1200x900">Landscape (1200 × 900)</option>
+                            <option value="800x600">Journal Single (800 × 600)</option>
+                            <option value="custom">Custom Dimensions</option>
+                        </select>
+                    </div>
+                    <div class="two-col">
+                        <div class="form-group">
+                            <label>Export Width (px)</label>
+                            <input type="number" id="exportWidth" value="800" oninput="document.getElementById('exportPreset').value='custom'">
+                        </div>
+                        <div class="form-group">
+                            <label>Export Height (px)</label>
+                            <input type="number" id="exportHeight" value="800" oninput="document.getElementById('exportPreset').value='custom'">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Resolution Scale</label>
+                        <select id="exportScale">
+                            <option value="1">1x (Standard)</option>
+                            <option value="2">2x (Retina / HD)</option>
+                            <option value="3" selected>3x (300 DPI Publication)</option>
+                            <option value="4">4x (Ultra HD)</option>
+                        </select>
+                    </div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                         <button class="btn-ghost" onclick="exportFormat('png')">PNG</button>
                         <button class="btn-ghost" onclick="exportFormat('jpg')">JPG</button>
@@ -658,6 +720,43 @@
 
         <!-- ── Right Column ─────────────────────────────────── -->
         <div class="right-col">
+
+            <!-- Quick Actions Bar (matches Vpp vs Loading Plotter) -->
+            <div class="plot-export-bar" id="plotExportBar">
+                <div class="plot-export-left">
+                    <span class="plot-export-label">Quick Actions</span>
+                </div>
+                <div class="plot-export-btns">
+                    <button class="btn-export-bar" onclick="exportFormat('png')" title="Export PNG (300 DPI)">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PNG (300 DPI)
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('jpg')" title="Export JPG Image">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        JPG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('svg')" title="Export Vector SVG">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        SVG
+                    </button>
+                    <button class="btn-export-bar" onclick="exportFormat('pdf')" title="Export Publication PDF">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        PDF
+                    </button>
+                    <button class="btn-export-bar" onclick="downloadVppMatrixCSV()" title="Download Vpp Matrix as CSV">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                        CSV Data
+                    </button>
+                    <button class="btn-export-bar" onclick="copyVppTable()" title="Copy Vpp Matrix Table (TSV)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copy Table
+                    </button>
+                    <button class="btn-export-bar" onclick="updatePlot()" title="Redraw and update heatmap">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Redraw Heatmap
+                    </button>
+                </div>
+            </div>
 
             <!-- Placeholder -->
             <div class="plot-placeholder" id="plotPlaceholder">
@@ -679,25 +778,6 @@
             <!-- Plot -->
             <div class="plot-wrapper hidden" id="plotContainer">
                 <div id="heatmapDiv"></div>
-            </div>
-
-            <!-- Export bar -->
-            <div class="plot-export-bar hidden" id="plotExportBar">
-                <span class="plot-export-label">Export Plot</span>
-                <div class="plot-export-btns">
-                    <button class="btn-export-bar" onclick="exportFormat('png')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PNG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportFormat('jpg')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>JPG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportFormat('svg')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>SVG
-                    </button>
-                    <button class="btn-export-bar" onclick="exportFormat('pdf')">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>PDF
-                    </button>
-                </div>
             </div>
 
             <!-- Vpp table -->
@@ -1173,15 +1253,18 @@ function updatePlot() {
     const zMinRaw = document.getElementById('zMin').value;
     const zMaxRaw = document.getElementById('zMax').value;
 
+    const NFORCES = vppMatrix.length || 5;
+    const NFREQS  = (vppMatrix[0] && vppMatrix[0].length) || 5;
+
     const zRows  = vppMatrix.map(row => row.map(v => v === null ? null : v));
 
     // Positions for Plotly category axes
     const xPositions = hasFreqValues
-        ? (freqLabels.length >= NFREQS ? freqLabels.slice(0, NFREQS) : [...freqLabels, ...Array(NFREQS - freqLabels.length).fill('')])
-        : [0, 1, 2, 3, 4];
+        ? (freqLabels.length >= NFREQS ? freqLabels.slice(0, NFREQS) : [...freqLabels, ...Array(NFREQS - freqLabels.length).fill('').map((_, i) => `F${freqLabels.length + i + 1}`)])
+        : Array.from({length: NFREQS}, (_, i) => i);
     const yPositions = hasForceValues
-        ? (forceLabels.length >= NFORCES ? forceLabels.slice(0, NFORCES) : [...forceLabels, ...Array(NFORCES - forceLabels.length).fill('')])
-        : [0, 1, 2, 3, 4];
+        ? (forceLabels.length >= NFORCES ? forceLabels.slice(0, NFORCES) : [...forceLabels, ...Array(NFORCES - forceLabels.length).fill('').map((_, i) => `Force ${forceLabels.length + i + 1}`)])
+        : Array.from({length: NFORCES}, (_, i) => i);
 
     // Compute overall min/max for threshold-based text colour
     const allVals = zRows.flat().filter(v => v !== null);
@@ -1356,6 +1439,8 @@ function updatePlot() {
    Vpp summary table
 ═══════════════════════════════════════════════════════════════ */
 function renderVppTable(forceLabels, freqLabels, decimals) {
+    const NFORCES = vppMatrix.length || 5;
+    const NFREQS  = (vppMatrix[0] && vppMatrix[0].length) || 5;
     const cellSuffix = getCellSuffix();
     let html = '<table><thead><tr><th>Force \\ Freq</th>';
     for (let fj = 0; fj < NFREQS; fj++) {
@@ -1368,8 +1453,8 @@ function renderVppTable(forceLabels, freqLabels, decimals) {
         const rowHdr = (forceLabels && forceLabels[fi] && String(forceLabels[fi]).trim()) ? forceLabels[fi] : `Force ${fi+1}`;
         html += `<tr><td>${rowHdr}</td>`;
         for (let fj = 0; fj < NFREQS; fj++) {
-            const v = vppMatrix[fi][fj];
-            html += `<td>${v !== null ? v.toFixed(decimals) + cellSuffix : '—'}</td>`;
+            const v = vppMatrix[fi] ? vppMatrix[fi][fj] : null;
+            html += `<td>${(v !== null && v !== undefined) ? v.toFixed(decimals) + cellSuffix : '—'}</td>`;
         }
         html += '</tr>';
     }
@@ -1378,17 +1463,55 @@ function renderVppTable(forceLabels, freqLabels, decimals) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   Export — use Plotly.toImage so the heatmap raster tiles,
-   colorbar, and all margins are captured at full resolution.
-   The SVG-scraping approach left unfilled strips at the edges
-   because Plotly clips its <image> tiles to the plot area rect
-   and that clip doesn't survive serialization at 2× scale.
+   Export Presets & CSV Data Download
+═══════════════════════════════════════════════════════════════ */
+function applyExportPreset(val) {
+    if (val === 'custom') return;
+    const [w, h] = val.split('x').map(Number);
+    if (w && h) {
+        document.getElementById('exportWidth').value = w;
+        document.getElementById('exportHeight').value = h;
+    }
+}
+
+function downloadVppMatrixCSV() {
+    const hasData = vppMatrix.flat().some(v => v !== null);
+    if (!hasData) {
+        setStatus('No data to export — please upload CSV files and generate the heatmap first.', 'error');
+        return;
+    }
+    const forceLabels = getForceLabels();
+    const freqLabels = getFreqLabels();
+    let csv = 'Force / Freq,' + freqLabels.map((f, i) => `"${f || 'F' + (i + 1)}"`).join(',') + '\n';
+    for (let fi = 0; fi < NFORCES; fi++) {
+        const row = [`"${forceLabels[fi] || 'Force ' + (fi + 1)}"`];
+        for (let fj = 0; fj < NFREQS; fj++) {
+            const v = vppMatrix[fi][fj];
+            row.push(v !== null ? v.toFixed(3) : '');
+        }
+        csv += row.join(',') + '\n';
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `TENG_heatmap_matrix_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    setStatus('Vpp matrix data downloaded as CSV.', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Export — use Plotly.toImage with custom sizing & proportional font scaling
+   Matches the preview proportions and ensures text sizes scale with the image
 ═══════════════════════════════════════════════════════════════ */
 function exportFormat(fmt) {
     const hasData = vppMatrix.flat().some(v => v !== null);
-    if (!hasData) { setStatus('No data to export — generate the heatmap first', 'error'); return; }
+    if (!hasData) { setStatus('No data to export — please upload CSV files and generate the heatmap first', 'error'); return; }
 
     const name = `TENG_heatmap_${new Date().toISOString().slice(0, 10)}`;
+
+    const exportW = parseInt(document.getElementById('exportWidth')?.value) || 800;
+    const exportH = parseInt(document.getElementById('exportHeight')?.value) || 800;
+    const exportScale = parseInt(document.getElementById('exportScale')?.value) || 3;
 
     const rawForceVal   = (document.getElementById('forceValues').value || '').trim();
     const hasForceValues= rawForceVal.length > 0;
@@ -1434,14 +1557,17 @@ function exportFormat(fmt) {
     };
     const colorscale = COLORSCALE_REVERSED[colorscaleRaw] || colorscaleRaw;
 
+    const NFORCES = vppMatrix.length || 5;
+    const NFREQS  = (vppMatrix[0] && vppMatrix[0].length) || 5;
+
     const zRows  = vppMatrix.map(row => row.map(v => v === null ? null : v));
 
     const xPositions = hasFreqValues
-        ? (freqLabels.length >= NFREQS ? freqLabels.slice(0, NFREQS) : [...freqLabels, ...Array(NFREQS - freqLabels.length).fill('')])
-        : [0, 1, 2, 3, 4];
+        ? (freqLabels.length >= NFREQS ? freqLabels.slice(0, NFREQS) : [...freqLabels, ...Array(NFREQS - freqLabels.length).fill('').map((_, i) => `F${freqLabels.length + i + 1}`)])
+        : Array.from({length: NFREQS}, (_, i) => i);
     const yPositions = hasForceValues
-        ? (forceLabels.length >= NFORCES ? forceLabels.slice(0, NFORCES) : [...forceLabels, ...Array(NFORCES - forceLabels.length).fill('')])
-        : [0, 1, 2, 3, 4];
+        ? (forceLabels.length >= NFORCES ? forceLabels.slice(0, NFORCES) : [...forceLabels, ...Array(NFORCES - forceLabels.length).fill('').map((_, i) => `Force ${forceLabels.length + i + 1}`)])
+        : Array.from({length: NFORCES}, (_, i) => i);
 
     const allVals = zRows.flat().filter(v => v !== null);
     const zMinRaw = document.getElementById('zMin').value;
@@ -1452,7 +1578,40 @@ function exportFormat(fmt) {
     const zMax    = zMaxRaw !== '' ? parseFloat(zMaxRaw) : undefined;
     const midVal  = dataMin + (dataMax - dataMin) * 0.55;
 
-    // Light-mode annotation colours
+    const t1 = (document.getElementById('titleLine1').value || '').trim();
+    const t2 = (document.getElementById('titleLine2').value || '').trim();
+    const titleParts = [t1, t2].filter(Boolean);
+    const hasTitle   = titleParts.length > 0;
+    const titleText  = titleParts.join('<br>');
+
+    const xVal  = (document.getElementById('xLabel').value || '').trim();
+    const yVal  = (document.getElementById('yLabel').value || '').trim();
+    const cbVal = (document.getElementById('colorbarLabel').value || '').trim();
+
+    // Proportional margins and font scaling based on export canvas size
+    const marginScale = Math.min(exportW / 698, exportH / 676);
+    const MARGIN = {
+        l: Math.round((yVal ? 88 : 50) * Math.max(0.85, marginScale)),
+        r: Math.round(115 * Math.max(0.85, marginScale)),
+        t: Math.round((hasTitle ? 88 : 30) * Math.max(0.85, marginScale)),
+        b: Math.round((xVal ? 88 : 50) * Math.max(0.85, marginScale))
+    };
+
+    const expPlotW = Math.max(200, exportW - MARGIN.l - MARGIN.r);
+    const expPlotH = Math.max(200, exportH - MARGIN.t - MARGIN.b);
+    const expPlotArea = Math.min(expPlotW, expPlotH);
+
+    // Font scaling factor ensures text increases in export in proportion to the canvas and preview
+    const basePreviewPlotSize = 500;
+    const fontScale = Math.max(1, expPlotArea / basePreviewPlotSize);
+
+    const expTitleSize = Math.round(titleSize * fontScale);
+    const expAxisSize = Math.round(axisSize * fontScale);
+    const expTickSize = Math.round(tickSize * fontScale);
+    const expAnnotSize = Math.round(annotSize * fontScale);
+    const expCbSize = Math.round(colorbarLabelSize * fontScale);
+
+    // Light-mode annotation colours with properly scaled font
     const exportAnnotations = [];
     if (showCellAnnot) {
         for (let fi = 0; fi < NFORCES; fi++) {
@@ -1465,67 +1624,49 @@ function exportFormat(fmt) {
                     x: xPositions[fj], y: yPositions[fi],
                     text: bC(cellText),
                     showarrow: false,
-                    font: { size: annotSize, family: 'Times New Roman, serif', color: textColor },
+                    font: { size: expAnnotSize, family: 'Times New Roman, serif', color: textColor },
                     xanchor: 'center', yanchor: 'middle'
                 });
             }
         }
     }
 
-    // Rebuild shapes with black lines
+    // Rebuild shapes with black lines and scaled stroke
     const exportShapes = [];
     for (let fi = 1; fi < NFORCES; fi++) {
-        exportShapes.push({ type:'line', xref:'paper', yref:'y', x0:0, x1:1, y0:fi-0.5, y1:fi-0.5, line:{color:'#000000',width:1.5} });
+        exportShapes.push({ type:'line', xref:'paper', yref:'y', x0:0, x1:1, y0:fi-0.5, y1:fi-0.5, line:{color:'#000000', width: Math.max(1.5, 1.5 * fontScale)} });
     }
     for (let fj = 1; fj < NFREQS; fj++) {
-        exportShapes.push({ type:'line', xref:'x', yref:'paper', x0:fj-0.5, x1:fj-0.5, y0:0, y1:1, line:{color:'#000000',width:1.5} });
+        exportShapes.push({ type:'line', xref:'x', yref:'paper', x0:fj-0.5, x1:fj-0.5, y0:0, y1:1, line:{color:'#000000', width: Math.max(1.5, 1.5 * fontScale)} });
     }
-
-    const t1 = (document.getElementById('titleLine1').value || '').trim();
-    const t2 = (document.getElementById('titleLine2').value || '').trim();
-    const titleParts = [t1, t2].filter(Boolean);
-    const hasTitle   = titleParts.length > 0;
-    const titleText  = titleParts.join('<br>');
-
-    const xVal  = (document.getElementById('xLabel').value || '').trim();
-    const yVal  = (document.getElementById('yLabel').value || '').trim();
-    const cbVal = (document.getElementById('colorbarLabel').value || '').trim();
 
     const xTitleConfig = xVal ? {
         text: bA(xVal),
-        font: { size: axisSize, family: 'Times New Roman, serif', color: '#000000' },
-        standoff: 12
+        font: { size: expAxisSize, family: 'Times New Roman, serif', color: '#000000' },
+        standoff: Math.round(12 * fontScale)
     } : undefined;
 
     const yTitleConfig = yVal ? {
         text: bA(yVal),
-        font: { size: axisSize, family: 'Times New Roman, serif', color: '#000000' },
-        standoff: 12
+        font: { size: expAxisSize, family: 'Times New Roman, serif', color: '#000000' },
+        standoff: Math.round(12 * fontScale)
     } : undefined;
 
     const cbTitleConfig = cbVal ? {
         text: bCb(`<i>${cbVal}</i>`),
         side: 'right',
-        font: { size: colorbarLabelSize, family: 'Times New Roman, serif', color: '#000000' }
+        font: { size: expCbSize, family: 'Times New Roman, serif', color: '#000000' }
     } : undefined;
-
-    const EXPORT_SIZE = 700;
-    const MARGIN = {
-        l: yTitleConfig ? 100 : 60,
-        r: 130,
-        t: hasTitle ? 100 : 30,
-        b: xTitleConfig ? 100 : 60
-    };
 
     const exportTrace = {
         type: 'heatmap', z: zRows, x: xPositions, y: yPositions,
         colorscale, zmin: zMin, zmax: zMax, xgap: 0, ygap: 0,
         colorbar: {
             ...(cbTitleConfig ? { title: cbTitleConfig } : { title: undefined }),
-            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
+            tickfont: { size: expTickSize, family: 'Times New Roman, serif', color: '#000000' },
             tickformat: '.1f', outlinewidth: 1, outlinecolor: '#000000',
             x: 1.02,
-            xpad: 10
+            xpad: Math.round(10 * fontScale)
         },
         hoverongaps: false
     };
@@ -1534,8 +1675,10 @@ function exportFormat(fmt) {
         ...(hasTitle ? {
             title: {
                 text: bT(titleText),
-                font: { size: titleSize, family: 'Times New Roman, serif', color: '#000000' },
-                x: 0.5, xanchor: 'center', pad: { t: 10, b: 0 }
+                font: { size: expTitleSize, family: 'Times New Roman, serif', color: '#000000' },
+                x: 0.5,
+                xanchor: 'center',
+                pad: { t: Math.round(10 * fontScale), b: 0 }
             }
         } : {
             title: undefined
@@ -1546,9 +1689,9 @@ function exportFormat(fmt) {
             range: [-0.5, NFREQS - 0.5],
             autorange: false,
             showticklabels: hasFreqValues,
-            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
-            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
-            side: 'bottom', ticklen: hasFreqValues ? 6 : 0, ticks: hasFreqValues ? 'outside' : '',
+            tickfont: { size: expTickSize, family: 'Times New Roman, serif', color: '#000000' },
+            linecolor: '#000000', showline: true, linewidth: Math.max(2.5, 2.5 * fontScale), mirror: true,
+            side: 'bottom', ticklen: hasFreqValues ? Math.round(6 * fontScale) : 0, ticks: hasFreqValues ? 'outside' : '',
             showgrid: false, zeroline: false
         },
         yaxis: {
@@ -1557,9 +1700,9 @@ function exportFormat(fmt) {
             range: [-0.5, NFORCES - 0.5],
             autorange: false,
             showticklabels: hasForceValues,
-            tickfont: { size: tickSize, family: 'Times New Roman, serif', color: '#000000' },
-            linecolor: '#000000', showline: true, linewidth: 2.5, mirror: true,
-            ticklen: hasForceValues ? 6 : 0, ticks: hasForceValues ? 'outside' : '',
+            tickfont: { size: expTickSize, family: 'Times New Roman, serif', color: '#000000' },
+            linecolor: '#000000', showline: true, linewidth: Math.max(2.5, 2.5 * fontScale), mirror: true,
+            ticklen: hasForceValues ? Math.round(6 * fontScale) : 0, ticks: hasForceValues ? 'outside' : '',
             showgrid: false, zeroline: false
         },
         annotations: exportAnnotations,
@@ -1567,22 +1710,18 @@ function exportFormat(fmt) {
         plot_bgcolor:  '#ffffff',
         paper_bgcolor: '#ffffff',
         margin: MARGIN,
-        width:  EXPORT_SIZE + MARGIN.l + MARGIN.r,
-        height: EXPORT_SIZE + MARGIN.t + MARGIN.b
+        width:  exportW,
+        height: exportH
     };
 
     if (fmt === 'svg') {
-        Plotly.toImage('heatmapDiv', { format: 'svg', width: exportLayout.width, height: exportLayout.height,
-            scale: 1, imageDataOnly: false,
-            // Temporarily render light layout, then restore
-        }).then(() => {}); // SVG path: use dedicated render below
-
-        // For SVG we need to render to a temp div with white background
         const tmp = document.createElement('div');
         tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+        tmp.style.width = exportW + 'px';
+        tmp.style.height = exportH + 'px';
         document.body.appendChild(tmp);
         Plotly.newPlot(tmp, [exportTrace], exportLayout, { staticPlot: true, displayModeBar: false })
-            .then(() => Plotly.toImage(tmp, { format: 'svg', width: exportLayout.width, height: exportLayout.height }))
+            .then(() => Plotly.toImage(tmp, { format: 'svg', width: exportW, height: exportH }))
             .then(dataUrl => {
                 document.body.removeChild(tmp);
                 const link = document.createElement('a');
@@ -1592,13 +1731,15 @@ function exportFormat(fmt) {
             });
 
     } else {
-        // PNG / JPG / PDF — render to temp div with white bg, capture as PNG
+        // PNG / JPG / PDF — render to temp div with white bg, capture at exportScale
         const tmp = document.createElement('div');
         tmp.style.cssText = 'position:fixed;left:-9999px;top:0;';
+        tmp.style.width = exportW + 'px';
+        tmp.style.height = exportH + 'px';
         document.body.appendChild(tmp);
 
         Plotly.newPlot(tmp, [exportTrace], exportLayout, { staticPlot: true, displayModeBar: false })
-            .then(() => Plotly.toImage(tmp, { format: 'png', width: exportLayout.width, height: exportLayout.height, scale: 2 }))
+            .then(() => Plotly.toImage(tmp, { format: 'png', width: exportW, height: exportH, scale: exportScale }))
             .then(dataUrl => {
                 document.body.removeChild(tmp);
 
@@ -1608,12 +1749,14 @@ function exportFormat(fmt) {
 
                 } else if (fmt === 'jpg') {
                     const img = new Image();
+                    const canvasW = exportW * exportScale;
+                    const canvasH = exportH * exportScale;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        canvas.width = exportLayout.width * 2; canvas.height = exportLayout.height * 2;
+                        canvas.width = canvasW; canvas.height = canvasH;
                         const ctx = canvas.getContext('2d');
                         ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.drawImage(img, 0, 0);
+                        ctx.drawImage(img, 0, 0, canvasW, canvasH);
                         const link = document.createElement('a');
                         link.download = name + '.jpg';
                         link.href = canvas.toDataURL('image/jpeg', 0.95); link.click();
@@ -1622,12 +1765,9 @@ function exportFormat(fmt) {
 
                 } else if (fmt === 'pdf') {
                     const { jsPDF } = window.jspdf;
-                    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                    // Fit within A4 landscape (277×190mm usable)
-                    const aspect = exportLayout.width / exportLayout.height;
-                    const pdfW = 277, pdfH = Math.min(190, pdfW / aspect);
-                    const pdfTop = (190 - pdfH) / 2 + 10;
-                    pdf.addImage(dataUrl, 'PNG', 10, pdfTop, pdfW, pdfH);
+                    const orientation = exportW >= exportH ? 'landscape' : 'portrait';
+                    const pdf = new jsPDF({ orientation, unit: 'pt', format: [exportW, exportH] });
+                    pdf.addImage(dataUrl, 'PNG', 0, 0, exportW, exportH);
                     pdf.save(name + '.pdf');
                 }
             });

@@ -734,6 +734,11 @@
                             </label>
                         </div>
                     </div>
+                    <div class="form-group" style="margin-top: 4px;">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="cfgTitleInsideMargin"> Keep Title Inside Margin
+                        </label>
+                    </div>
 
                     <div class="divider"></div>
 
@@ -945,14 +950,25 @@
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
+                    <div class="form-group">
+                        <label>Preset Size</label>
+                        <select id="cfgExportPreset" onchange="applyExportPreset(this.value)">
+                            <option value="1000x700" selected>Default (1000 × 700)</option>
+                            <option value="1920x1080">Full HD (1920 × 1080)</option>
+                            <option value="1000x1000">Square (1000 × 1000)</option>
+                            <option value="800x600">Journal Single (800 × 600)</option>
+                            <option value="1400x900">Journal Double (1400 × 900)</option>
+                            <option value="custom">Custom Dimensions</option>
+                        </select>
+                    </div>
                     <div class="two-col">
                         <div class="form-group">
                             <label>Export Width (px)</label>
-                            <input type="number" id="cfgExportWidth" value="1000">
+                            <input type="number" id="cfgExportWidth" value="1000" oninput="document.getElementById('cfgExportPreset').value='custom'">
                         </div>
                         <div class="form-group">
                             <label>Export Height (px)</label>
-                            <input type="number" id="cfgExportHeight" value="700">
+                            <input type="number" id="cfgExportHeight" value="700" oninput="document.getElementById('cfgExportPreset').value='custom'">
                         </div>
                     </div>
                     <div class="form-group">
@@ -1244,7 +1260,7 @@ function updateSeriesLine(id, lineStyle) {
 /* ── Setup Live Listeners ─────────────────────────────────────── */
 function setupLiveInputListeners() {
     const liveIds = [
-        'cfgTitle', 'cfgTitleSize', 'cfgTitleBold',
+        'cfgTitle', 'cfgTitleSize', 'cfgTitleBold', 'cfgTitleInsideMargin',
         'cfgXLabel', 'cfgXLabelSize', 'cfgXBold',
         'cfgYLabel', 'cfgYLabelSize', 'cfgYBold',
         'cfgFontFamily', 'cfgLineWidth', 'cfgMarkerSize',
@@ -1822,6 +1838,7 @@ function buildPlotlyLayout() {
     const titleText = document.getElementById('cfgTitle').value.trim();
     const titleSize = parseFloat(document.getElementById('cfgTitleSize').value) || 22;
     const titleBold = document.getElementById('cfgTitleBold').checked;
+    const titleInsideMargin = document.getElementById('cfgTitleInsideMargin') ? document.getElementById('cfgTitleInsideMargin').checked : false;
 
     const xLabel = document.getElementById('cfgXLabel').value.trim();
     const xLabelSize = parseFloat(document.getElementById('cfgXLabelSize').value) || 18;
@@ -1926,15 +1943,29 @@ function buildPlotlyLayout() {
         yaxis.dtick = parseFloat(yStepInput);
     }
 
+    const titleConfig = titleInsideMargin ? {
+        text: formattedTitle,
+        font: { family: fontFamily, size: titleSize, color: '#000000' },
+        xref: 'paper',
+        yref: 'paper',
+        x: 0.5,
+        xanchor: 'center',
+        y: 0.96,
+        yanchor: 'top',
+        pad: { t: 0, b: 0 }
+    } : {
+        text: formattedTitle,
+        font: { family: fontFamily, size: titleSize, color: '#000000' },
+        pad: { b: 15 },
+        x: 0.5,
+        xanchor: 'center'
+    };
+
+    const topMargin = titleInsideMargin ? 35 : 70;
+
     const layout = {
         font: { family: fontFamily, color: '#000000' },
-        title: {
-            text: formattedTitle,
-            font: { family: fontFamily, size: titleSize, color: '#000000' },
-            pad: { b: 15 },
-            x: 0.5,
-            xanchor: 'center'
-        },
+        title: titleConfig,
         xaxis: xaxis,
         yaxis: yaxis,
         plot_bgcolor: '#ffffff',
@@ -1954,7 +1985,7 @@ function buildPlotlyLayout() {
             y: legendCoords.y,
             yanchor: legendCoords.yanchor
         },
-        margin: { l: 80, r: legendPos === 'or' ? 120 : 40, t: 70, b: 70 }
+        margin: { l: 80, r: legendPos === 'or' ? 120 : 40, t: topMargin, b: 70 }
     };
 
     return layout;
@@ -1973,7 +2004,16 @@ function renderPlot() {
     Plotly.newPlot('plotDiv', traces, layout, config);
 }
 
-/* ── Exporting Plots ──────────────────────────────────────────── */
+/* ── Export Presets & Plot Export ─────────────────────────────── */
+function applyExportPreset(val) {
+    if (val === 'custom') return;
+    const [w, h] = val.split('x').map(Number);
+    if (w && h) {
+        document.getElementById('cfgExportWidth').value = w;
+        document.getElementById('cfgExportHeight').value = h;
+    }
+}
+
 function exportPlot(format) {
     if (!state.hasData) {
         setStatus('No data to export — please upload CSV files or click "Load Sample Data" first.', 'error');
@@ -1994,6 +2034,31 @@ function exportPlot(format) {
     const exportLayout = buildPlotlyLayout();
     exportLayout.width = width;
     exportLayout.height = height;
+
+    const fontScale = Math.max(0.7, width / 1000);
+    if (fontScale !== 1) {
+        if (exportLayout.title && exportLayout.title.font) {
+            exportLayout.title.font.size = Math.round(exportLayout.title.font.size * fontScale);
+        }
+        if (exportLayout.xaxis && exportLayout.xaxis.title && exportLayout.xaxis.title.font) {
+            exportLayout.xaxis.title.font.size = Math.round(exportLayout.xaxis.title.font.size * fontScale);
+        }
+        if (exportLayout.xaxis && exportLayout.xaxis.tickfont) {
+            exportLayout.xaxis.tickfont.size = Math.round(exportLayout.xaxis.tickfont.size * fontScale);
+        }
+        if (exportLayout.yaxis && exportLayout.yaxis.title && exportLayout.yaxis.title.font) {
+            exportLayout.yaxis.title.font.size = Math.round(exportLayout.yaxis.title.font.size * fontScale);
+        }
+        if (exportLayout.yaxis && exportLayout.yaxis.tickfont) {
+            exportLayout.yaxis.tickfont.size = Math.round(exportLayout.yaxis.tickfont.size * fontScale);
+        }
+        if (exportLayout.legend && exportLayout.legend.font) {
+            exportLayout.legend.font.size = Math.round(exportLayout.legend.font.size * fontScale);
+        }
+        if (exportLayout.legend && exportLayout.legend.title && exportLayout.legend.title.font) {
+            exportLayout.legend.title.font.size = Math.round(exportLayout.legend.title.font.size * fontScale);
+        }
+    }
 
     if (outerFrame) {
         if (!exportLayout.shapes) exportLayout.shapes = [];
