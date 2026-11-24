@@ -824,10 +824,10 @@
 
     <!-- Header -->
     <div class="header">
-        <h1 id="mainPageHeading">TENG Voltage Analysis Plotter</h1>
+        <h1 id="mainPageHeading">TENG Open Circuit Voltage Analysis Plotter</h1>
         <p>Publication-quality plots · CSV import · Multi-format export</p>
         <nav class="site-nav">
-            <a href="index.html" class="nav-link nav-link--active" id="mainNavVoltageLink">Voltage Plotter</a>
+            <a href="index.html" class="nav-link nav-link--active" id="mainNavVoltageLink">Open Circuit Voltage Plotter</a>
             <a href="heatmap.html" class="nav-link">Heatmap Plotter</a>
             <a href="concentration.html" class="nav-link">Vpp vs Loading Plotter</a>
         </nav>
@@ -845,18 +845,18 @@
                     <span class="panel-chevron">▼</span>
                 </div>
                 <div class="panel-body">
-                    <!-- Mode Switch: Voltage vs. Load Current -->
+                    <!-- Mode Switch: Open Circuit Voltage vs. Short Circuit Current -->
                     <div class="form-group" style="margin-bottom:10px;">
                         <label style="margin-bottom:5px;font-size:11px;font-weight:600;letter-spacing:0.4px;">SIGNAL TO PLOT</label>
                         <div class="mode-toggle-group">
                             <button type="button" class="mode-toggle-btn active" id="modeBtnVoltage" onclick="setPlotMode('voltage')">
-                                Voltage vs. Time
+                                Open Circuit Voltage vs. Time
                             </button>
                             <button type="button" class="mode-toggle-btn" id="modeBtnCurrent" onclick="setPlotMode('current')">
-                                Load Current vs. Time
+                                Short Circuit Current vs. Time
                             </button>
                         </div>
-                        <div id="columnHintBadge" class="column-hint">Plotting Column 2 (Voltage) vs. Column 1 (Time)</div>
+                        <div id="columnHintBadge" class="column-hint">Plotting Column 2 (Open Circuit Voltage) vs. Column 1 (Time)</div>
                     </div>
 
                     <div style="display:flex;gap:6px;margin-bottom:2px;">
@@ -959,7 +959,7 @@
                         </div>
                         <div class="form-group">
                             <label>Y-Axis Label</label>
-                            <input type="text" id="yLabel" value="VOLTAGE (V)">
+                            <input type="text" id="yLabel" value="V&lt;sub&gt;OC&lt;/sub&gt; (V)">
                         </div>
                     </div>
                 </div>
@@ -1435,12 +1435,12 @@ function onLabelTypeChange(newType) {
         const curr = t1El.value.trim();
         const matchesAny = Object.values(LABEL_PRESETS).some(p => {
             const vTitle = p.title1;
-            const iTitle = p.title1.replace(/voltage/gi, 'Load Current');
+            const iTitle = p.title1.replace(/voltage/gi, 'Short Circuit Current');
             return curr === vTitle || curr === iTitle;
         });
         if (matchesAny || curr.includes('dependent Induced Output') || curr.includes('solution casted') || curr === '') {
             t1El.value = (currentPlotMode === 'current')
-                ? preset.title1.replace(/voltage/gi, 'Load Current')
+                ? preset.title1.replace(/voltage/gi, 'Short Circuit Current')
                 : preset.title1;
         }
     }
@@ -1826,12 +1826,12 @@ function setPlotMode(mode) {
     const title1Input = document.getElementById('titleLine1');
 
     if (mode === 'current') {
-        if (headingEl) headingEl.textContent = 'TENG Load Current Analysis Plotter';
-        document.title = 'TENG Load Current Analysis Plotter';
-        if (navLinkEl) navLinkEl.textContent = 'Load Current Plotter';
+        if (headingEl) headingEl.textContent = 'TENG Short Circuit Current Analysis Plotter';
+        document.title = 'TENG Short Circuit Current Analysis Plotter';
+        if (navLinkEl) navLinkEl.textContent = 'Short Circuit Current Plotter';
 
         if (badgeEl) {
-            badgeEl.textContent = 'Plotting Column 3 (Load Current in μA) vs. Column 1 (Time)';
+            badgeEl.textContent = 'Plotting Column 3 (Short Circuit Current in μA) vs. Column 1 (Time)';
         }
         if (peakLbl) peakLbl.textContent = 'Ipp Peak Label (blank = hide)';
         if (peakOffsetLbl) peakOffsetLbl.textContent = 'Ipp label';
@@ -1839,19 +1839,19 @@ function setPlotMode(mode) {
         if (vppInput && (vppInput.value === 'Vpp = {v} V' || vppInput.value === '')) {
             vppInput.value = 'Ipp = {v} μA';
         }
-        if (yLabelInput && (yLabelInput.value === 'VOLTAGE (V)' || yLabelInput.value === '')) {
-            yLabelInput.value = 'LOAD CURRENT (μA)';
+        if (yLabelInput && (yLabelInput.value === 'V<sub>OC</sub> (V)' || yLabelInput.value === 'VOLTAGE (V)' || yLabelInput.value === '')) {
+            yLabelInput.value = 'I<sub>SC</sub> (μA)';
         }
         if (title1Input) {
-            title1Input.value = title1Input.value.replace(/voltage/gi, m => m === 'Voltage' ? 'Load Current' : 'load current');
+            title1Input.value = title1Input.value.replace(/voltage|open\s*circuit\s*voltage/gi, m => m[0] === m[0].toUpperCase() ? 'Short Circuit Current' : 'short circuit current');
         }
     } else {
-        if (headingEl) headingEl.textContent = 'TENG Voltage Analysis Plotter';
-        document.title = 'TENG Voltage Analysis Plotter';
-        if (navLinkEl) navLinkEl.textContent = 'Voltage Plotter';
+        if (headingEl) headingEl.textContent = 'TENG Open Circuit Voltage Analysis Plotter';
+        document.title = 'TENG Open Circuit Voltage Analysis Plotter';
+        if (navLinkEl) navLinkEl.textContent = 'Open Circuit Voltage Plotter';
 
         if (badgeEl) {
-            badgeEl.textContent = 'Plotting Column 2 (Voltage) vs. Column 1 (Time)';
+            badgeEl.textContent = 'Plotting Column 2 (Open Circuit Voltage) vs. Column 1 (Time)';
         }
         if (peakLbl) peakLbl.textContent = 'Vpp Peak Label (blank = hide)';
         if (peakOffsetLbl) peakOffsetLbl.textContent = 'Vpp label';
@@ -1859,11 +1859,11 @@ function setPlotMode(mode) {
         if (vppInput && (vppInput.value === 'Ipp = {v} μA' || vppInput.value === '')) {
             vppInput.value = 'Vpp = {v} V';
         }
-        if (yLabelInput && (yLabelInput.value === 'LOAD CURRENT (μA)' || yLabelInput.value === 'CURRENT (μA)' || yLabelInput.value === '')) {
-            yLabelInput.value = 'VOLTAGE (V)';
+        if (yLabelInput && (yLabelInput.value === 'I<sub>SC</sub> (μA)' || yLabelInput.value === 'I<sub>SC</sub> (Micro A)' || yLabelInput.value === 'LOAD CURRENT (μA)' || yLabelInput.value === 'CURRENT (μA)' || yLabelInput.value === '')) {
+            yLabelInput.value = 'V<sub>OC</sub> (V)';
         }
         if (title1Input) {
-            title1Input.value = title1Input.value.replace(/load\s*current|current/gi, m => m[0] === m[0].toUpperCase() ? 'Voltage' : 'voltage');
+            title1Input.value = title1Input.value.replace(/short\s*circuit\s*current|load\s*current|current/gi, m => m[0] === m[0].toUpperCase() ? 'Open Circuit Voltage' : 'open circuit voltage');
         }
     }
 
@@ -1888,9 +1888,9 @@ function setPlotMode(mode) {
         });
 
         if (missingCol3Files.length > 0) {
-            setStatus(`Warning: Column 3 (Load Current) was not found in ${missingCol3Files.join(', ')}. Please upload CSVs with 3 columns (Time, Voltage, Load Current).`, 'error');
+            setStatus(`Warning: Column 3 (Short Circuit Current) was not found in ${missingCol3Files.join(', ')}. Please upload CSVs with 3 columns (Time, Voltage, Short Circuit Current).`, 'error');
         } else {
-            setStatus(`Switched to ${mode === 'current' ? 'Load Current' : 'Voltage'} analysis`, 'success');
+            setStatus(`Switched to ${mode === 'current' ? 'Short Circuit Current' : 'Open Circuit Voltage'} analysis`, 'success');
         }
 
         if (allMin !== Infinity && allMax !== -Infinity) {
@@ -1921,7 +1921,7 @@ function parseCSVData(csvText) {
                 // Check if this row contains column header strings
                 row.forEach((col, idx) => {
                     const str = String(col).trim();
-                    if (/load\s*current|current|ch2|i_pp/i.test(str)) {
+                    if (/short\s*circuit\s*current|load\s*current|current|ch2|i_pp/i.test(str)) {
                         currColIdx = idx;
                     } else if (/time|sec/i.test(str)) {
                         timeColIdx = idx;
@@ -2016,7 +2016,7 @@ function processFiles() {
                 msgs.push(`File ${slotIndex + 1} (${file.name}): no valid data`);
             } else {
                 const colInfo = parsed.hasCurrent
-                    ? `3 cols: Time, Voltage, Load Current (${parsed.currentUnit || 'μA'})`
+                    ? `3 cols: Time, Voltage, Short Circuit Current (${parsed.currentUnit || 'μA'})`
                     : '2 cols: Time, Voltage';
                 fileData.push({ index: slotIndex, name: file.name, data: parsed, hasCurrent: parsed.hasCurrent });
                 msgs.push(`File ${slotIndex + 1} (${file.name}): ${parsed.length} rows (${colInfo})`);
